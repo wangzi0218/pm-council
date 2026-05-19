@@ -9,7 +9,7 @@ import { DiscussionManager } from "@/engine/discussion";
 import { getScenario } from "@/scenarios/registry";
 import { DEFAULT_SCENARIO } from "@/scenarios/registry";
 import { generateId } from "@/lib/utils";
-import type { Message, ImageAttachment, Skill, Character } from "@/types";
+import type { Message, ImageAttachment, Skill, Character, Chat, Workspace } from "@/types";
 import { Upload, X } from "lucide-react";
 
 export function ChatView() {
@@ -126,13 +126,45 @@ export function ChatView() {
 
   const handleSendMessage = useCallback(
     async (content: string, images: ImageAttachment[]) => {
-      if (!currentChatId) return;
       clearErrorMessage();
+
+      // 如果没有活跃讨论，自动创建一个
+      let activeChatId = currentChatId;
+      if (!activeChatId) {
+        let workspaceId = currentWorkspaceId;
+        if (!workspaceId && workspaces.length > 0) {
+          workspaceId = workspaces[0]!.id;
+          useAppStore.setState({ currentWorkspaceId: workspaceId });
+        }
+        if (!workspaceId) {
+          const ws: Workspace = {
+            id: generateId(),
+            name: "默认工作区",
+            background: "",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          await useAppStore.getState().addWorkspace(ws);
+          workspaceId = ws.id;
+          useAppStore.setState({ currentWorkspaceId: ws.id });
+        }
+        const chat: Chat = {
+          id: generateId(),
+          workspaceId,
+          title: content.slice(0, 20) + (content.length > 20 ? "..." : ""),
+          status: "active",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await useAppStore.getState().addChat(chat);
+        await useAppStore.getState().setCurrentChat(chat.id);
+        activeChatId = chat.id;
+      }
 
       // 1. 添加用户消息
       const userMessage: Message = {
         id: generateId(),
-        chatId: currentChatId,
+        chatId: activeChatId,
         role: "user",
         content,
         images,
@@ -144,7 +176,7 @@ export function ChatView() {
       let previousContext: string | undefined;
       const [prevMessages, characterSkills] = await Promise.all([
         currentWorkspaceId
-          ? db.getOtherChatMessages(currentWorkspaceId, currentChatId, 10).catch(() => [])
+          ? db.getOtherChatMessages(currentWorkspaceId, activeChatId, 10).catch(() => [])
           : Promise.resolve([]),
         loadCharacterSkills(scenario.characters),
       ]);
@@ -160,7 +192,7 @@ export function ChatView() {
       try {
         const currentMessages = useChatStore.getState().messages;
         const result = await engine.processUserInputStream(
-          currentChatId,
+          activeChatId,
           content,
           images,
           currentMessages,
@@ -204,7 +236,7 @@ export function ChatView() {
         setErrorMessage(msg.text, msg.showSettingsLink);
       }
     },
-    [currentChatId, addMessage, setTyping, createChoice, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, llmSettings],
+    [currentChatId, currentWorkspaceId, workspaces, addMessage, setTyping, createChoice, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, clearErrorMessage, llmSettings, scenario],
   );
 
   // Drag-and-drop handlers (full window coverage)
