@@ -8,7 +8,7 @@ import { DiscussionManager } from "@/engine/discussion";
 import { CHARACTERS } from "@/scenarios/pm-discussion/characters";
 import { generateId } from "@/lib/utils";
 import type { Message, ImageAttachment } from "@/types";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 
 export function ChatView() {
   const messages = useChatStore((s) => s.messages);
@@ -19,7 +19,11 @@ export function ChatView() {
   const startStreamingMessage = useChatStore((s) => s.startStreamingMessage);
   const appendStreamChunk = useChatStore((s) => s.appendStreamChunk);
   const finishStreaming = useChatStore((s) => s.finishStreaming);
+  const setErrorMessage = useChatStore((s) => s.setErrorMessage);
+  const errorMessage = useChatStore((s) => s.errorMessage);
+  const clearErrorMessage = useChatStore((s) => s.clearErrorMessage);
   const llmSettings = useAppStore((s) => s.settings.llm);
+  const openSettings = useAppStore((s) => s.openSettings);
   const currentChatId = useAppStore((s) => s.currentChatId);
 
   const [pendingImages, setPendingImages] = useState<ImageAttachment[]>([]);
@@ -47,6 +51,7 @@ export function ChatView() {
   const handleSendMessage = useCallback(
     async (content: string, images: ImageAttachment[]) => {
       if (!currentChatId) return;
+      clearErrorMessage();
 
       // 1. 添加用户消息
       const userMessage: Message = {
@@ -96,11 +101,13 @@ export function ChatView() {
         if (result.choice) {
           await createChoice(result.choice);
         }
-      } catch {
+      } catch (err) {
         setTyping(null);
+        const msg = parseLLMError(err);
+        setErrorMessage(msg.text, msg.showSettingsLink);
       }
     },
-    [currentChatId, addMessage, setTyping, createChoice, startStreamingMessage, appendStreamChunk, finishStreaming, llmSettings],
+    [currentChatId, addMessage, setTyping, createChoice, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, llmSettings],
   );
 
   // Drag-and-drop handlers (full window coverage)
@@ -157,6 +164,25 @@ export function ChatView() {
         onDrop={handleDrop}
       >
         <EmptyState />
+        {errorMessage && (
+          <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-400">
+            <span className="flex-1">{errorMessage.text}</span>
+            {errorMessage.showSettingsLink && (
+              <button
+                onClick={() => { clearErrorMessage(); openSettings(); }}
+                className="shrink-0 font-medium underline hover:no-underline"
+              >
+                去设置
+              </button>
+            )}
+            <button
+              onClick={clearErrorMessage}
+              className="shrink-0 p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
         <InputArea
           onAddImages={handleAddImages}
           pendingImages={pendingImages}
@@ -177,6 +203,25 @@ export function ChatView() {
       onDrop={handleDrop}
     >
       <MessageList onSelectChoice={handleSelectChoice} />
+      {errorMessage && (
+        <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-400">
+          <span className="flex-1">{errorMessage.text}</span>
+          {errorMessage.showSettingsLink && (
+            <button
+              onClick={() => { clearErrorMessage(); openSettings(); }}
+              className="shrink-0 font-medium underline hover:no-underline"
+            >
+              去设置
+            </button>
+          )}
+          <button
+            onClick={clearErrorMessage}
+            className="shrink-0 p-0.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       <InputArea
         onAddImages={handleAddImages}
         pendingImages={pendingImages}
@@ -201,6 +246,24 @@ function DragOverlay({ isVisible }: { isVisible: boolean }) {
       </div>
     </div>
   );
+}
+
+function parseLLMError(err: unknown): { text: string; showSettingsLink: boolean } {
+  const msg = err instanceof Error ? err.message : String(err);
+
+  if (msg.includes("HTTP 401") || msg.includes("HTTP 403")) {
+    return { text: "API Key 无效或权限不足，请在设置中检查", showSettingsLink: true };
+  }
+  if (msg.includes("HTTP 429")) {
+    return { text: "请求过于频繁，请稍后重试", showSettingsLink: false };
+  }
+  if (msg.includes("HTTP 5")) {
+    return { text: "模型服务暂时不可用，请稍后重试", showSettingsLink: false };
+  }
+  if (err instanceof TypeError || msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+    return { text: "网络连接失败，请检查网络", showSettingsLink: false };
+  }
+  return { text: `请求失败：${msg}`, showSettingsLink: false };
 }
 
 async function readImageFiles(files: File[]): Promise<ImageAttachment[]> {

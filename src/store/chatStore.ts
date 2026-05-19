@@ -9,6 +9,7 @@ interface ChatState {
   currentChoice: Choice | null;
   isLoading: boolean;
   streamingMessageId: UUID | null;
+  errorMessage: { text: string; showSettingsLink: boolean } | null;
 
   loadMessages: (chatId: UUID) => Promise<void>;
   addMessage: (message: Message) => Promise<void>;
@@ -21,6 +22,8 @@ interface ChatState {
   startStreamingMessage: (message: Message) => void;
   appendStreamChunk: (messageId: UUID, chunk: string) => void;
   finishStreaming: (messageId: UUID) => Promise<void>;
+  setErrorMessage: (text: string, showSettingsLink?: boolean) => void;
+  clearErrorMessage: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -30,6 +33,7 @@ export const useChatStore = create<ChatState>((set) => ({
   currentChoice: null,
   isLoading: false,
   streamingMessageId: null,
+  errorMessage: null,
 
   loadMessages: async (chatId) => {
     set({ isLoading: true });
@@ -99,7 +103,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
   clearMessages: () =>
-    set({ messages: [], currentChoice: null, isTyping: false, typingCharacterId: null, streamingMessageId: null }),
+    set({ messages: [], currentChoice: null, isTyping: false, typingCharacterId: null, streamingMessageId: null, errorMessage: null }),
 
   startStreamingMessage: (message) =>
     set((state) => ({
@@ -126,4 +130,8 @@ export const useChatStore = create<ChatState>((set) => ({
       }
     }
   },
+
+  setErrorMessage: (text, showSettingsLink = false) =>
+    set({ errorMessage: { text, showSettingsLink } }),
+  clearErrorMessage: () => set({ errorMessage: null }),
 }));
