@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
-import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload } from "lucide-react";
+import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload, MessageSquare, Wrench } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { db } from "@/store/database";
 import { useChatStore } from "@/store/chatStore";
+import { SCENARIOS } from "@/scenarios/registry";
 import type { Workspace, Chat, UUID } from "@/types";
 
 export function Sidebar() {
@@ -92,6 +93,9 @@ export function Sidebar() {
     [setCurrentChat],
   );
 
+  const currentScenarioId = useAppStore((s) => s.currentScenarioId);
+  const setCurrentScenario = useAppStore((s) => s.setCurrentScenario);
+
   // Group chats by workspace
   const workspaceGroups = workspaces.map((ws) => ({
     workspace: ws,
@@ -105,6 +109,27 @@ export function Sidebar() {
         <h1 className="text-sm font-semibold text-foreground-secondary dark:text-dark-foreground-secondary">
           PM Workflow Harness
         </h1>
+      </div>
+
+      {/* Scene Selector */}
+      <div className="p-2 border-b border-border dark:border-dark-border">
+        <div className="flex gap-1">
+          {SCENARIOS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setCurrentScenario(s.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                currentScenarioId === s.id
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-foreground-secondary dark:text-dark-foreground-secondary hover:bg-background dark:hover:bg-dark-background"
+              }`}
+              title={s.description}
+            >
+              {s.id === "pm-discussion" ? <MessageSquare size={12} /> : <Wrench size={12} />}
+              {s.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Workspace & Chat List */}

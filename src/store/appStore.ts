@@ -7,6 +7,7 @@ import { generateId } from "@/lib/utils";
 interface AppState {
   currentWorkspaceId: UUID | null;
   currentChatId: UUID | null;
+  currentScenarioId: string;
   isSettingsOpen: boolean;
   settings: AppSettings;
   workspaces: Workspace[];
@@ -16,6 +17,7 @@ interface AppState {
   initApp: () => Promise<void>;
   setCurrentWorkspace: (id: UUID | null) => void;
   setCurrentChat: (id: UUID | null) => Promise<void>;
+  setCurrentScenario: (id: string) => void;
   openSettings: () => void;
   closeSettings: () => void;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -38,6 +40,7 @@ const defaultSettings: AppSettings = {
 export const useAppStore = create<AppState>((set, get) => ({
   currentWorkspaceId: null,
   currentChatId: null,
+  currentScenarioId: "pm-discussion",
   isSettingsOpen: false,
   settings: defaultSettings,
   workspaces: [],
@@ -46,10 +49,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   initApp: async () => {
     await db.init();
-    const [workspaces, settings] = await Promise.all([
+    const [workspaces, settings, scenarioSetting] = await Promise.all([
       db.listWorkspaces(),
       db.loadAppSettings(),
+      db.getSetting("engine.currentScenario"),
     ]);
+
+    const currentScenarioId = scenarioSetting
+      ? (JSON.parse(scenarioSetting) as string)
+      : "pm-discussion";
 
     // 如果没有工作区，创建默认工作区
     if (workspaces.length === 0) {
@@ -61,7 +69,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         updatedAt: new Date().toISOString(),
       };
       await db.createWorkspace(defaultWs);
-      set({ workspaces: [defaultWs], settings, isReady: true });
+      set({ workspaces: [defaultWs], settings, currentScenarioId, isReady: true });
       return;
     }
 
@@ -73,6 +81,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       chats,
       currentWorkspaceId: firstWs.id,
       settings,
+      currentScenarioId,
       isReady: true,
     });
   },
@@ -90,6 +99,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     } else {
       useChatStore.getState().clearMessages();
     }
+  },
+
+  setCurrentScenario: (id) => {
+    set({ currentScenarioId: id });
+    db.setSetting("engine.currentScenario", JSON.stringify(id), "engine").catch(() => {});
   },
 
   openSettings: () => set({ isSettingsOpen: true }),

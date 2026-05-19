@@ -6,9 +6,10 @@ import { useAppStore } from "@/store/appStore";
 import { db } from "@/store/database";
 import { EmptyState } from "@/components/chat/EmptyState";
 import { DiscussionManager } from "@/engine/discussion";
-import { PM_SCENARIO } from "@/scenarios/pm-discussion";
+import { getScenario } from "@/scenarios/registry";
+import { DEFAULT_SCENARIO } from "@/scenarios/registry";
 import { generateId } from "@/lib/utils";
-import type { Message, ImageAttachment, Skill } from "@/types";
+import type { Message, ImageAttachment, Skill, Character } from "@/types";
 import { Upload, X } from "lucide-react";
 
 export function ChatView() {
@@ -30,6 +31,8 @@ export function ChatView() {
   const currentChatId = useAppStore((s) => s.currentChatId);
   const workspaces = useAppStore((s) => s.workspaces);
   const currentWorkspaceId = useAppStore((s) => s.currentWorkspaceId);
+  const currentScenarioId = useAppStore((s) => s.currentScenarioId);
+  const scenario = getScenario(currentScenarioId) ?? DEFAULT_SCENARIO;
 
   const [pendingImages, setPendingImages] = useState<ImageAttachment[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -81,9 +84,9 @@ export function ChatView() {
       };
 
       // 启动新一轮 NPC 讨论
-      const engine = new DiscussionManager(llmSettings, PM_SCENARIO);
+      const engine = new DiscussionManager(llmSettings, scenario);
       try {
-        const characterSkills = await loadCharacterSkills();
+        const characterSkills = await loadCharacterSkills(scenario.characters);
         const currentMessages = [...useChatStore.getState().messages, syntheticMessage];
         const result = await engine.processUserInputStream(
           currentChatId,
@@ -143,7 +146,7 @@ export function ChatView() {
         currentWorkspaceId
           ? db.getOtherChatMessages(currentWorkspaceId, currentChatId, 10).catch(() => [])
           : Promise.resolve([]),
-        loadCharacterSkills(),
+        loadCharacterSkills(scenario.characters),
       ]);
       if (prevMessages.length > 0) {
         previousContext = prevMessages
@@ -152,7 +155,7 @@ export function ChatView() {
       }
 
       // 3. 启动 NPC 讨论（流式）
-      const engine = new DiscussionManager(llmSettings, PM_SCENARIO);
+      const engine = new DiscussionManager(llmSettings, scenario);
 
       try {
         const currentMessages = useChatStore.getState().messages;
@@ -387,9 +390,9 @@ async function readImageFiles(files: File[]): Promise<ImageAttachment[]> {
   return results;
 }
 
-async function loadCharacterSkills(): Promise<Record<string, Skill[]>> {
+async function loadCharacterSkills(characters: Character[]): Promise<Record<string, Skill[]>> {
   const map: Record<string, Skill[]> = {};
-  for (const char of PM_SCENARIO.characters) {
+  for (const char of characters) {
     try {
       const skills = await db.getActiveSkillsForCharacter(char.id);
       if (skills.length > 0) map[char.id] = skills;
