@@ -42,10 +42,66 @@ export function ChatView() {
   }, []);
 
   const handleSelectChoice = useCallback(
-    (choiceId: string, optionId: string) => {
-      selectChoiceOption(choiceId, optionId);
+    async (choiceId: string, optionId: string) => {
+      await selectChoiceOption(choiceId, optionId);
+
+      // 触发 NPC 对选择结果的回应
+      const choice = useChatStore.getState().currentChoice;
+      if (!choice || !currentChatId) return;
+
+      const selectedOpt = choice.options.find((o) => o.id === optionId);
+      if (!selectedOpt) return;
+
+      // 构建描述选择结果的合成消息
+      const choiceContext = [
+        `[选择已做出]`,
+        `问题：${choice.question}`,
+        `选择了：${selectedOpt.label} — ${selectedOpt.description}`,
+      ].join("\n");
+
+      const syntheticMessage: Message = {
+        id: generateId(),
+        chatId: currentChatId,
+        role: "user",
+        content: choiceContext,
+        images: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      // 启动新一轮 NPC 讨论
+      const engine = new DiscussionManager(llmSettings);
+      try {
+        const currentMessages = [...useChatStore.getState().messages, syntheticMessage];
+        const result = await engine.processUserInputStream(
+          currentChatId,
+          choiceContext,
+          [],
+          currentMessages,
+          CHARACTERS,
+          (_characterId, chunk) => {
+            const streamingId = useChatStore.getState().streamingMessageId;
+            if (streamingId) {
+              appendStreamChunk(streamingId, chunk);
+            }
+          },
+          (msg) => {
+            if (msg.characterId) setTyping(msg.characterId);
+            startStreamingMessage(msg);
+          },
+          (characterId) => setTyping(characterId),
+        );
+
+        for (const msg of result.messages) {
+          await finishStreaming(msg.id);
+        }
+        setTyping(null);
+      } catch (err) {
+        setTyping(null);
+        const parsed = parseLLMError(err);
+        setErrorMessage(parsed.text, parsed.showSettingsLink);
+      }
     },
-    [selectChoiceOption],
+    [currentChatId, selectChoiceOption, setTyping, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, llmSettings],
   );
 
   const handleSendMessage = useCallback(
