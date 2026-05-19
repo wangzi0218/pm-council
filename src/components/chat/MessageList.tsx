@@ -8,9 +8,10 @@ import { ChevronDown } from "lucide-react";
 
 interface MessageListProps {
   onSelectChoice: (choiceId: string, optionId: string) => void;
+  onSkipChoice?: (choiceId: string) => void;
 }
 
-export function MessageList({ onSelectChoice }: MessageListProps) {
+export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) {
   const messages = useChatStore((s) => s.messages);
   const isTyping = useChatStore((s) => s.isTyping);
   const typingCharacterId = useChatStore((s) => s.typingCharacterId);
@@ -85,6 +86,7 @@ export function MessageList({ onSelectChoice }: MessageListProps) {
             onSelect={(optionId) =>
               onSelectChoice(currentChoice.id, optionId)
             }
+            onSkip={onSkipChoice ? () => onSkipChoice(currentChoice.id) : undefined}
             disabled={isChoiceDisabled}
           />
         )}

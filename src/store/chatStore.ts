@@ -17,6 +17,7 @@ interface ChatState {
   setCurrentChoice: (choice: Choice | null) => void;
   createChoice: (choice: Choice) => Promise<void>;
   selectChoiceOption: (choiceId: UUID, optionId: UUID) => Promise<void>;
+  skipChoice: (choiceId: UUID) => Promise<void>;
   setLoading: (loading: boolean) => void;
   clearMessages: () => void;
   startStreamingMessage: (message: Message) => void;
@@ -98,6 +99,31 @@ export const useChatStore = create<ChatState>((set) => ({
       });
     } catch (e) {
       console.error("Failed to persist choice update:", e);
+    }
+  },
+
+  skipChoice: async (choiceId) => {
+    set((state) => {
+      if (state.currentChoice?.id !== choiceId) return state;
+      return {
+        currentChoice: {
+          ...state.currentChoice,
+          status: "skipped" as const,
+          resolvedAt: new Date().toISOString(),
+        },
+      };
+    });
+    // 延迟清除 choice，让用户看到跳过状态
+    setTimeout(() => {
+      set({ currentChoice: null });
+    }, 300);
+    try {
+      await db.updateChoice(choiceId, {
+        status: "skipped",
+        resolvedAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("Failed to persist choice skip:", e);
     }
   },
 

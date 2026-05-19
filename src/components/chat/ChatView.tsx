@@ -16,6 +16,7 @@ export function ChatView() {
   const setTyping = useChatStore((s) => s.setTyping);
   const createChoice = useChatStore((s) => s.createChoice);
   const selectChoiceOption = useChatStore((s) => s.selectChoiceOption);
+  const skipChoice = useChatStore((s) => s.skipChoice);
   const startStreamingMessage = useChatStore((s) => s.startStreamingMessage);
   const appendStreamChunk = useChatStore((s) => s.appendStreamChunk);
   const finishStreaming = useChatStore((s) => s.finishStreaming);
@@ -40,6 +41,13 @@ export function ChatView() {
   const handleRemoveImage = useCallback((imageId: string) => {
     setPendingImages((prev) => prev.filter((i) => i.id !== imageId));
   }, []);
+
+  const handleSkipChoice = useCallback(
+    (choiceId: string) => {
+      skipChoice(choiceId);
+    },
+    [skipChoice],
+  );
 
   const handleSelectChoice = useCallback(
     async (choiceId: string, optionId: string) => {
@@ -262,7 +270,7 @@ export function ChatView() {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <MessageList onSelectChoice={handleSelectChoice} />
+      <MessageList onSelectChoice={handleSelectChoice} onSkipChoice={handleSkipChoice} />
       {errorMessage && (
         <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-400">
           <span className="flex-1">{errorMessage.text}</span>

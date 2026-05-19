@@ -16,6 +16,7 @@ interface ChoiceCardProps {
   options: ChoiceOption[];
   selectedOptionId?: string;
   onSelect: (optionId: string) => void;
+  onSkip?: () => void;
   disabled: boolean;
 }
 
@@ -24,6 +25,7 @@ export function ChoiceCard({
   options,
   selectedOptionId,
   onSelect,
+  onSkip,
   disabled,
 }: ChoiceCardProps) {
   return (
@@ -65,6 +67,18 @@ export function ChoiceCard({
               ? `你选择了 ${selected.label}. ${selected.description}`
               : null;
           })()}
+        </div>
+      )}
+
+      {/* Skip button */}
+      {!selectedOptionId && !disabled && onSkip && (
+        <div className="mt-3 pt-3 border-t border-border dark:border-dark-border">
+          <button
+            onClick={onSkip}
+            className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors"
+          >
+            跳过，继续讨论
+          </button>
         </div>
       )}
     </div>
