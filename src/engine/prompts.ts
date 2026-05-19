@@ -9,14 +9,18 @@ export function buildSystemPrompt(
   recentMessages: Message[],
   _allCharacters: Character[],
   background?: string,
+  previousContext?: string,
 ): string {
   const messageBlock = formatMessagesForPrompt(recentMessages);
   const backgroundBlock = background?.trim()
     ? `\n# 项目背景\n${background.trim()}\n`
     : "";
+  const previousBlock = previousContext?.trim()
+    ? `\n# 之前的讨论\n以下是本工作区之前讨论的部分内容，你可以在合适时引用：\n${previousContext.trim()}\n`
+    : "";
 
   return `${character.systemPrompt}
-${backgroundBlock}
+${backgroundBlock}${previousBlock}
 # 当前讨论
 以下是最近的讨论内容，请基于这些内容发言：
 

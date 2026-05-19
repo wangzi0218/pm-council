@@ -96,6 +96,38 @@ class DatabaseManager {
     }
   }
 
+  async getOtherChatMessages(workspaceId: UUID, excludeChatId: UUID, limit: number = 5): Promise<Message[]> {
+    const db = this.getDb();
+    // 获取同工作区其他讨论的最近消息
+    const rows = await db.select<Array<{
+      id: string;
+      chat_id: string;
+      role: string;
+      character_id: string | null;
+      content: string;
+      metadata: string | null;
+      created_at: string;
+    }>>(
+      `SELECT m.* FROM message m
+       JOIN chat c ON m.chat_id = c.id
+       WHERE c.workspace_id = $1 AND m.chat_id != $2 AND m.role IN ('user', 'character')
+       ORDER BY m.created_at DESC
+       LIMIT $3`,
+      [workspaceId, excludeChatId, limit],
+    );
+
+    return rows.reverse().map((r) => ({
+      id: r.id,
+      chatId: r.chat_id,
+      role: r.role as Message["role"],
+      characterId: r.character_id ?? undefined,
+      content: r.content,
+      images: [],
+      metadata: r.metadata ? (JSON.parse(r.metadata) as MessageMetadata) : undefined,
+      createdAt: r.created_at,
+    }));
+  }
+
   async deleteWorkspace(id: UUID): Promise<void> {
     const db = this.getDb();
     await db.execute("DELETE FROM workspace WHERE id = $1", [id]);

@@ -3,6 +3,7 @@ import { MessageList } from "@/components/chat/MessageList";
 import { InputArea } from "@/components/chat/InputArea";
 import { useChatStore } from "@/store/chatStore";
 import { useAppStore } from "@/store/appStore";
+import { db } from "@/store/database";
 import { EmptyState } from "@/components/chat/EmptyState";
 import { DiscussionManager } from "@/engine/discussion";
 import { CHARACTERS } from "@/scenarios/pm-discussion/characters";
@@ -134,7 +135,22 @@ export function ChatView() {
       };
       await addMessage(userMessage);
 
-      // 2. 启动 NPC 讨论（流式）
+      // 2. 加载同工作区其他讨论的上下文
+      let previousContext: string | undefined;
+      if (currentWorkspaceId) {
+        try {
+          const prevMessages = await db.getOtherChatMessages(currentWorkspaceId, currentChatId, 10);
+          if (prevMessages.length > 0) {
+            previousContext = prevMessages
+              .map((m) => m.role === "user" ? `用户：${m.content}` : `[${m.characterId ?? "NPC"}]：${m.content}`)
+              .join("\n");
+          }
+        } catch {
+          // 加载失败不影响当前讨论
+        }
+      }
+
+      // 3. 启动 NPC 讨论（流式）
       const engine = new DiscussionManager(llmSettings);
 
       try {
@@ -165,6 +181,7 @@ export function ChatView() {
           },
           // 项目背景
           workspaces.find((w) => w.id === currentWorkspaceId)?.background,
+          previousContext,
         );
 
         // 流式完成，持久化每条消息
