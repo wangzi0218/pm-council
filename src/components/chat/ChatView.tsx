@@ -17,6 +17,7 @@ export function ChatView() {
   const createChoice = useChatStore((s) => s.createChoice);
   const selectChoiceOption = useChatStore((s) => s.selectChoiceOption);
   const skipChoice = useChatStore((s) => s.skipChoice);
+  const archiveCurrentChoice = useChatStore((s) => s.archiveCurrentChoice);
   const startStreamingMessage = useChatStore((s) => s.startStreamingMessage);
   const appendStreamChunk = useChatStore((s) => s.appendStreamChunk);
   const finishStreaming = useChatStore((s) => s.finishStreaming);
@@ -103,13 +104,15 @@ export function ChatView() {
           await finishStreaming(msg.id);
         }
         setTyping(null);
+        archiveCurrentChoice();
       } catch (err) {
         setTyping(null);
+        archiveCurrentChoice();
         const parsed = parseLLMError(err);
         setErrorMessage(parsed.text, parsed.showSettingsLink);
       }
     },
-    [currentChatId, selectChoiceOption, setTyping, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, llmSettings],
+    [currentChatId, selectChoiceOption, archiveCurrentChoice, setTyping, startStreamingMessage, appendStreamChunk, finishStreaming, setErrorMessage, llmSettings],
   );
 
   const handleSendMessage = useCallback(

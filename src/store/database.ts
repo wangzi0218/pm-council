@@ -297,6 +297,62 @@ class DatabaseManager {
     };
   }
 
+  async getResolvedChoices(chatId: UUID): Promise<Choice[]> {
+    const db = this.getDb();
+    const rows = await db.select<Array<{
+      id: string;
+      chat_id: string;
+      trigger_message_id: string | null;
+      question: string;
+      selected_option_id: string | null;
+      status: string;
+      created_at: string;
+      resolved_at: string | null;
+    }>>(
+      "SELECT * FROM choice WHERE chat_id = $1 AND status IN ('resolved', 'skipped') ORDER BY created_at ASC",
+      [chatId],
+    );
+
+    const choices: Choice[] = [];
+    for (const r of rows) {
+      const optionRows = await db.select<Array<{ id: string; label: string; description: string }>>(
+        "SELECT * FROM choice_option WHERE choice_id = $1",
+        [r.id],
+      );
+
+      const options: ChoiceOption[] = [];
+      for (const opt of optionRows) {
+        const prefRows = await db.select<Array<{ character_id: string; leaning: string; reason: string | null }>>(
+          "SELECT * FROM character_preference WHERE choice_option_id = $1",
+          [opt.id],
+        );
+        options.push({
+          id: opt.id,
+          label: opt.label,
+          description: opt.description,
+          characterPreferences: prefRows.map((p) => ({
+            characterId: p.character_id,
+            leaning: p.leaning as CharacterPreference["leaning"],
+            reason: p.reason ?? undefined,
+          })),
+        });
+      }
+
+      choices.push({
+        id: r.id,
+        chatId: r.chat_id,
+        triggerMessageId: r.trigger_message_id ?? undefined,
+        question: r.question,
+        options,
+        selectedOptionId: r.selected_option_id ?? undefined,
+        status: r.status as Choice["status"],
+        createdAt: r.created_at,
+        resolvedAt: r.resolved_at ?? undefined,
+      });
+    }
+    return choices;
+  }
+
   async updateChoice(id: UUID, updates: Partial<Pick<Choice, "selectedOptionId" | "status" | "resolvedAt">>): Promise<void> {
     const db = this.getDb();
     if (updates.selectedOptionId !== undefined) {

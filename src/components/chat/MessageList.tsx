@@ -16,6 +16,7 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
   const isTyping = useChatStore((s) => s.isTyping);
   const typingCharacterId = useChatStore((s) => s.typingCharacterId);
   const currentChoice = useChatStore((s) => s.currentChoice);
+  const resolvedChoices = useChatStore((s) => s.resolvedChoices);
   const streamingMessageId = useChatStore((s) => s.streamingMessageId);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -77,6 +78,17 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
         {isTyping && typingCharacterId && !streamingMessageId && (
           <TypingIndicator characterId={typingCharacterId} />
         )}
+
+        {resolvedChoices.map((choice) => (
+          <ChoiceCard
+            key={choice.id}
+            question={choice.question}
+            options={choice.options}
+            selectedOptionId={choice.selectedOptionId}
+            onSelect={() => {}}
+            disabled
+          />
+        ))}
 
         {currentChoice && (
           <ChoiceCard

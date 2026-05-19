@@ -7,6 +7,7 @@ interface ChatState {
   isTyping: boolean;
   typingCharacterId: UUID | null;
   currentChoice: Choice | null;
+  resolvedChoices: Choice[];
   isLoading: boolean;
   streamingMessageId: UUID | null;
   errorMessage: { text: string; showSettingsLink: boolean } | null;
@@ -18,6 +19,7 @@ interface ChatState {
   createChoice: (choice: Choice) => Promise<void>;
   selectChoiceOption: (choiceId: UUID, optionId: UUID) => Promise<void>;
   skipChoice: (choiceId: UUID) => Promise<void>;
+  archiveCurrentChoice: () => void;
   setLoading: (loading: boolean) => void;
   clearMessages: () => void;
   startStreamingMessage: (message: Message) => void;
@@ -32,6 +34,7 @@ export const useChatStore = create<ChatState>((set) => ({
   isTyping: false,
   typingCharacterId: null,
   currentChoice: null,
+  resolvedChoices: [],
   isLoading: false,
   streamingMessageId: null,
   errorMessage: null,
@@ -39,8 +42,11 @@ export const useChatStore = create<ChatState>((set) => ({
   loadMessages: async (chatId) => {
     set({ isLoading: true });
     try {
-      const messages = await db.listMessages(chatId);
-      set({ messages });
+      const [messages, resolvedChoices] = await Promise.all([
+        db.listMessages(chatId),
+        db.getResolvedChoices(chatId),
+      ]);
+      set({ messages, resolvedChoices });
     } finally {
       set({ isLoading: false });
     }
@@ -80,16 +86,16 @@ export const useChatStore = create<ChatState>((set) => ({
   },
 
   selectChoiceOption: async (choiceId, optionId) => {
+    let resolved: Choice | undefined;
     set((state) => {
       if (state.currentChoice?.id !== choiceId) return state;
-      return {
-        currentChoice: {
-          ...state.currentChoice,
-          selectedOptionId: optionId,
-          status: "resolved" as const,
-          resolvedAt: new Date().toISOString(),
-        },
+      resolved = {
+        ...state.currentChoice,
+        selectedOptionId: optionId,
+        status: "resolved" as const,
+        resolvedAt: new Date().toISOString(),
       };
+      return { currentChoice: resolved };
     });
     try {
       await db.updateChoice(choiceId, {
@@ -100,6 +106,17 @@ export const useChatStore = create<ChatState>((set) => ({
     } catch (e) {
       console.error("Failed to persist choice update:", e);
     }
+  },
+
+  /** 将当前 choice 移入已解决列表 */
+  archiveCurrentChoice: () => {
+    set((state) => {
+      if (!state.currentChoice) return state;
+      return {
+        currentChoice: null,
+        resolvedChoices: [...state.resolvedChoices, state.currentChoice],
+      };
+    });
   },
 
   skipChoice: async (choiceId) => {
@@ -129,7 +146,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
   clearMessages: () =>
-    set({ messages: [], currentChoice: null, isTyping: false, typingCharacterId: null, streamingMessageId: null, errorMessage: null }),
+    set({ messages: [], currentChoice: null, resolvedChoices: [], isTyping: false, typingCharacterId: null, streamingMessageId: null, errorMessage: null }),
 
   startStreamingMessage: (message) =>
     set((state) => ({
