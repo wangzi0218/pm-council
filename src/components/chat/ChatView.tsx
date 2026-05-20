@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { MessageList } from "@/components/chat/MessageList";
 import { InputArea } from "@/components/chat/InputArea";
+import { ChatSettings } from "@/components/chat/ChatSettings";
 import { useChatStore } from "@/store/chatStore";
 import { useAppStore } from "@/store/appStore";
 import { db } from "@/store/database";
@@ -45,6 +46,7 @@ export function ChatView() {
 
   const [pendingImages, setPendingImages] = useState<ImageAttachment[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(false);
   const dragCounterRef = useRef(0);
 
   const handleAddImages = useCallback((images: ImageAttachment[]) => {
@@ -337,7 +339,7 @@ export function ChatView() {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <MessageList onSelectChoice={handleSelectChoice} onSkipChoice={handleSkipChoice} />
+      <MessageList onSelectChoice={handleSelectChoice} onSkipChoice={handleSkipChoice} onOpenSettings={() => setShowChatSettings(true)} />
       {errorMessage && (
         <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-400">
           <span className="flex-1">{errorMessage.text}</span>
@@ -364,6 +366,9 @@ export function ChatView() {
         onSendMessage={handleSendMessage}
       />
       <DragOverlay isVisible={isDragOver} />
+      {showChatSettings && currentChat && (
+        <ChatSettings chat={currentChat} onClose={() => setShowChatSettings(false)} />
+      )}
     </main>
   );
 }

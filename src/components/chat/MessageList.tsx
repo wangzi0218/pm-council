@@ -5,14 +5,16 @@ import { NPCMessage } from "@/components/chat/NPCMessage";
 import { UserMessage } from "@/components/chat/UserMessage";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ChoiceCard } from "@/components/chat/ChoiceCard";
-import { ChevronDown } from "lucide-react";
+import { getCharacter } from "@/lib/characters";
+import { ChevronDown, Settings } from "lucide-react";
 
 interface MessageListProps {
   onSelectChoice: (choiceId: string, optionId: string) => void;
   onSkipChoice?: (choiceId: string) => void;
+  onOpenSettings?: () => void;
 }
 
-export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) {
+export function MessageList({ onSelectChoice, onSkipChoice, onOpenSettings }: MessageListProps) {
   const messages = useChatStore((s) => s.messages);
   const streamingMessages = useChatStore((s) => s.streamingMessages);
   const isTyping = useChatStore((s) => s.isTyping);
@@ -82,8 +84,48 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
   const isChoiceDisabled =
     currentChoice?.status === "resolved" || currentChoice?.status === "skipped";
 
+  // Chat header data
+  const chats = useAppStore((s) => s.chats);
+  const currentChat = chats.find((c) => c.id === currentChatId);
+  const chatCharacters = (currentChat?.characterIds ?? [])
+    .map((id) => getCharacter(id))
+    .filter(Boolean);
+
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div className="flex-1 relative overflow-hidden flex flex-col">
+      {/* Chat header */}
+      <div className="shrink-0 flex items-center gap-3 px-4 py-2.5 border-b border-border dark:border-dark-border">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold truncate">{currentChat?.title ?? "讨论"}</div>
+          <div className="flex items-center gap-1 mt-0.5">
+            {chatCharacters.slice(0, 6).map((char) => (
+              <div
+                key={char!.id}
+                className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium text-white"
+                style={{ backgroundColor: char!.color }}
+                title={char!.name}
+              >
+                {char!.avatar}
+              </div>
+            ))}
+            {chatCharacters.length > 6 && (
+              <span className="text-[10px] text-foreground-secondary dark:text-dark-foreground-secondary">
+                +{chatCharacters.length - 6}
+              </span>
+            )}
+          </div>
+        </div>
+        {onOpenSettings && (
+          <button
+            onClick={onOpenSettings}
+            className="p-1.5 hover:bg-background-chat dark:hover:bg-dark-background-chat rounded-md transition-colors"
+            title="群聊设置"
+          >
+            <Settings size={16} className="text-foreground-secondary dark:text-dark-foreground-secondary" />
+          </button>
+        )}
+      </div>
+
       <div
         ref={scrollRef}
         onScroll={handleScroll}

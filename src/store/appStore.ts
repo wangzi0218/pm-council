@@ -27,7 +27,7 @@ interface AppState {
   addWorkspace: (workspace: Workspace) => Promise<void>;
   updateWorkspace: (id: UUID, updates: Partial<Pick<Workspace, "name" | "description" | "background">>) => Promise<void>;
   addChat: (chat: Chat) => Promise<void>;
-  updateChat: (id: UUID, updates: Partial<Pick<Chat, "title" | "status">>) => Promise<void>;
+  updateChat: (id: UUID, updates: Partial<Pick<Chat, "title" | "status" | "characterIds">>) => Promise<void>;
 }
 
 const defaultSettings: AppSettings = {
@@ -142,7 +142,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({ chats: [...state.chats, chat] }));
   },
 
-  updateChat: async (id, updates) => {
+  updateChat: async (id: UUID, updates: Partial<Pick<Chat, "title" | "status" | "characterIds">>) => {
     await db.updateChat(id, updates);
     set((state) => ({
       chats: state.chats.map((c) => c.id === id ? { ...c, ...updates } : c),

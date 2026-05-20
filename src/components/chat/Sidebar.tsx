@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
-import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload } from "lucide-react";
+import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload, Trash2 } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { db } from "@/store/database";
 import { useChatStore } from "@/store/chatStore";
@@ -304,6 +304,20 @@ function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(chat.title);
   const updateChat = useAppStore((s) => s.updateChat);
+  const currentChatId = useAppStore((s) => s.currentChatId);
+  const setCurrentChat = useAppStore((s) => s.setCurrentChat);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`确定要删除对话「${chat.title}」吗？`)) return;
+    await db.deleteChat(chat.id);
+    useAppStore.setState((s) => ({
+      chats: s.chats.filter((c) => c.id !== chat.id),
+    }));
+    if (currentChatId === chat.id) {
+      await setCurrentChat(null);
+    }
+  };
 
   const handleRename = async () => {
     const trimmed = editTitle.trim();
@@ -336,17 +350,17 @@ function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
     .filter(Boolean);
 
   return (
-    <button
+    <div
       onClick={onClick}
       onDoubleClick={() => { setEditing(true); setEditTitle(chat.title); }}
-      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors cursor-pointer group relative ${
         isActive
           ? "bg-primary/10 text-primary border-l-[3px] border-l-primary"
           : "text-foreground dark:text-dark-foreground hover:bg-background dark:hover:bg-dark-background"
       }`}
       title="双击改名"
     >
-      <div className="truncate font-medium">{chat.title}</div>
+      <div className="truncate font-medium pr-6">{chat.title}</div>
       <div className="flex items-center gap-1 mt-1">
         {chatCharacters.slice(0, 4).map((char) => (
           <div
@@ -364,6 +378,14 @@ function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
           </span>
         )}
       </div>
-    </button>
+      {/* Delete button */}
+      <button
+        onClick={handleDelete}
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 transition-opacity"
+        title="删除对话"
+      >
+        <Trash2 size={12} className="text-red-500" />
+      </button>
+    </div>
   );
 }
