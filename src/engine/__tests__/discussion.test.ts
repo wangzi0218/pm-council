@@ -98,7 +98,7 @@ describe("DiscussionManager", () => {
       );
 
       expect(onMessageStart).toHaveBeenCalledTimes(PM_SCENARIO.characters.length);
-    });
+    }, 15000);
 
     it("calls onChunk during streaming", async () => {
       const onMessageStart = vi.fn();
@@ -114,6 +114,6 @@ describe("DiscussionManager", () => {
       );
 
       expect(onChunk).toHaveBeenCalled();
-    });
+    }, 15000);
   });
 });

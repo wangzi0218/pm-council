@@ -185,6 +185,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     newMap.delete(messageId);
     set({ streamingMessages: newMap });
 
+    // Add to messages[] so it stays visible after streaming ends
+    set((s) => ({ messages: [...s.messages, msg] }));
+
     // Persist to DB
     try {
       await db.createMessage(msg);
