@@ -107,7 +107,7 @@ export function ChatView() {
       try {
         const characterSkills = await loadCharacterSkills(chatCharacters);
         const currentMessages = [...useChatStore.getState().messages, syntheticMessage];
-        const result = await engine.processUserInputStream(
+        await engine.processUserInputStream(
           currentChatId,
           choiceContext,
           [],
@@ -120,15 +120,13 @@ export function ChatView() {
             startStreamingMessage(msg);
           },
           (characterId) => setTyping(characterId),
+          (msgId) => finishStreaming(msgId),
           workspaces.find((w) => w.id === currentWorkspaceId)?.background,
           undefined,
           characterSkills,
           chatCharacters,
         );
 
-        for (const msg of result.messages) {
-          await finishStreaming(msg.id);
-        }
         setTyping(null);
         archiveCurrentChoice();
       } catch (err) {
@@ -205,6 +203,10 @@ export function ChatView() {
           (characterId) => {
             setTyping(characterId);
           },
+          // onStreamEnd: 每个 NPC 完成后立即从 streaming map 移除
+          (msgId) => {
+            finishStreaming(msgId);
+          },
           // 项目背景
           workspaces.find((w) => w.id === currentWorkspaceId)?.background,
           undefined,
@@ -212,10 +214,6 @@ export function ChatView() {
           chatCharacters,
         );
 
-        // 流式完成，持久化每条消息
-        for (const msg of result.messages) {
-          await finishStreaming(msg.id);
-        }
         setTyping(null);
 
         // 如果有选择点，设置到 store 并持久化

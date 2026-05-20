@@ -119,6 +119,7 @@ export class DiscussionManager {
     onChunk: (characterId: string, chunk: string, messageId: UUID) => void,
     onMessageStart: (message: Message) => void,
     onTypingStart?: (characterId: string) => void,
+    onStreamEnd?: (messageId: UUID) => void,
     background?: string,
     previousContext?: string,
     characterSkills?: Record<string, Skill[]>,
@@ -186,10 +187,13 @@ export class DiscussionManager {
           },
         };
         newMessages.push(completedMessage);
+        // Notify that this NPC's stream is complete
+        onStreamEnd?.(messageId);
       } catch {
         const fallback = this.generateFallbackResponse(chatId, characterId);
         onChunk(characterId, fallback.content, messageId);
         newMessages.push({ ...emptyMessage, content: fallback.content });
+        onStreamEnd?.(messageId);
       }
     }
 

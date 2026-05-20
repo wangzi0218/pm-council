@@ -103,10 +103,6 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
           ) : null
         )}
 
-        {isTyping && typingCharacterId && !currentStreaming.some((m) => m.characterId === typingCharacterId) && (
-          <TypingIndicator characterId={typingCharacterId} />
-        )}
-
         {resolvedChoices.map((choice) => {
           const selectedOpt = choice.options.find((o) => o.id === choice.selectedOptionId);
           return (
@@ -119,6 +115,10 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
             </div>
           );
         })}
+
+        {isTyping && typingCharacterId && !currentStreaming.some((m) => m.characterId === typingCharacterId) && (
+          <TypingIndicator characterId={typingCharacterId} />
+        )}
 
         {currentChoice && (
           <ChoiceCard
