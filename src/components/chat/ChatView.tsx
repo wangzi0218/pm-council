@@ -50,6 +50,13 @@ export function ChatView() {
   const [showChatSettings, setShowChatSettings] = useState(false);
   const dragCounterRef = useRef(0);
 
+  // Close settings panel when switching conversations
+  const prevChatIdRef = useRef(currentChatId);
+  if (currentChatId !== prevChatIdRef.current) {
+    prevChatIdRef.current = currentChatId;
+    if (showChatSettings) setShowChatSettings(false);
+  }
+
   const handleAddImages = useCallback((images: ImageAttachment[]) => {
     setPendingImages((prev) => {
       const remaining = 5 - prev.length;
