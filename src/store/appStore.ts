@@ -8,6 +8,7 @@ interface AppState {
   currentWorkspaceId: UUID | null;
   currentChatId: UUID | null;
   currentScenarioId: string;
+  viewingCharacterId: UUID | null;
   isSettingsOpen: boolean;
   settings: AppSettings;
   workspaces: Workspace[];
@@ -18,6 +19,8 @@ interface AppState {
   setCurrentWorkspace: (id: UUID | null) => void;
   setCurrentChat: (id: UUID | null) => Promise<void>;
   setCurrentScenario: (id: string) => void;
+  openCharacterProfile: (id: UUID) => void;
+  closeCharacterProfile: () => void;
   openSettings: () => void;
   closeSettings: () => void;
   updateSettings: (settings: Partial<AppSettings>) => Promise<void>;
@@ -41,6 +44,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentWorkspaceId: null,
   currentChatId: null,
   currentScenarioId: "pm-discussion",
+  viewingCharacterId: null,
   isSettingsOpen: false,
   settings: defaultSettings,
   workspaces: [],
@@ -105,6 +109,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ currentScenarioId: id });
     db.setSetting("engine.currentScenario", JSON.stringify(id), "engine").catch(() => {});
   },
+
+  openCharacterProfile: (id) => set({ viewingCharacterId: id, isSettingsOpen: false }),
+  closeCharacterProfile: () => set({ viewingCharacterId: null }),
 
   openSettings: () => set({ isSettingsOpen: true }),
   closeSettings: () => set({ isSettingsOpen: false }),

@@ -4,7 +4,7 @@ import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload, MessageSqua
 import { generateId } from "@/lib/utils";
 import { db } from "@/store/database";
 import { useChatStore } from "@/store/chatStore";
-import { SCENARIOS } from "@/scenarios/registry";
+import { SCENARIOS, getScenario, DEFAULT_SCENARIO } from "@/scenarios/registry";
 import type { Workspace, Chat, UUID } from "@/types";
 
 export function Sidebar() {
@@ -95,6 +95,9 @@ export function Sidebar() {
 
   const currentScenarioId = useAppStore((s) => s.currentScenarioId);
   const setCurrentScenario = useAppStore((s) => s.setCurrentScenario);
+  const openCharacterProfile = useAppStore((s) => s.openCharacterProfile);
+
+  const activeScenario = getScenario(currentScenarioId) ?? DEFAULT_SCENARIO;
 
   // Group chats by workspace
   const workspaceGroups = workspaces.map((ws) => ({
@@ -127,6 +130,35 @@ export function Sidebar() {
             >
               {s.id === "pm-discussion" ? <MessageSquare size={12} /> : <Wrench size={12} />}
               {s.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Characters */}
+      <div className="px-3 py-2 border-b border-border dark:border-dark-border">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] font-medium text-foreground-secondary dark:text-dark-foreground-secondary uppercase tracking-wider">
+            团队成员
+          </span>
+        </div>
+        <div className="flex gap-1.5">
+          {activeScenario.characters.map((char) => (
+            <button
+              key={char.id}
+              onClick={() => openCharacterProfile(char.id)}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs rounded-md hover:bg-background dark:hover:bg-dark-background transition-colors group"
+              title={`${char.name} — 点击查看档案`}
+            >
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium text-white shrink-0"
+                style={{ backgroundColor: char.color }}
+              >
+                {char.avatar}
+              </div>
+              <span className="text-foreground dark:text-dark-foreground group-hover:text-primary transition-colors">
+                {char.name}
+              </span>
             </button>
           ))}
         </div>

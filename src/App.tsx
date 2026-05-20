@@ -1,11 +1,13 @@
 import { useEffect } from "react";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { ChatView } from "@/components/chat/ChatView";
+import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { useAppStore } from "@/store/appStore";
 
 function App() {
   const isSettingsOpen = useAppStore((s) => s.isSettingsOpen);
+  const viewingCharacterId = useAppStore((s) => s.viewingCharacterId);
   const isReady = useAppStore((s) => s.isReady);
   const initApp = useAppStore((s) => s.initApp);
 
@@ -26,7 +28,7 @@ function App() {
   return (
     <div className="flex h-screen bg-background text-foreground dark:bg-dark-background dark:text-dark-foreground">
       <Sidebar />
-      <ChatView />
+      {viewingCharacterId ? <CharacterProfile /> : <ChatView />}
       {isSettingsOpen && <SettingsPanel />}
     </div>
   );
