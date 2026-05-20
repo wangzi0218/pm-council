@@ -4,9 +4,15 @@ import { Plus, Settings, ChevronRight, FolderOpen, Download, Upload } from "luci
 import { generateId } from "@/lib/utils";
 import { db } from "@/store/database";
 import { useChatStore } from "@/store/chatStore";
-import { getScenario, DEFAULT_SCENARIO } from "@/scenarios/registry";
+import { getScenario, DEFAULT_SCENARIO, SCENARIOS } from "@/scenarios/registry";
 import { getCharacter } from "@/lib/characters";
+import { NpcPicker } from "./NpcPicker";
 import type { Workspace, Chat, UUID } from "@/types";
+
+/** Merge all characters from all scenarios (deduplicated) */
+const ALL_CHARACTERS = [...new Map(
+  SCENARIOS.flatMap((s) => s.characters).map((c) => [c.id, c])
+).values()];
 
 export function Sidebar() {
   const openSettings = useAppStore((s) => s.openSettings);
@@ -57,7 +63,16 @@ export function Sidebar() {
     input.click();
   }, []);
 
-  const handleNewChat = useCallback(async () => {
+  const [showNpcPicker, setShowNpcPicker] = useState(false);
+
+  const handleNewChat = useCallback(() => {
+    setShowNpcPicker(true);
+  }, []);
+
+  const handleNpcPickerConfirm = useCallback(async (selectedIds: string[]) => {
+    setShowNpcPicker(false);
+    if (selectedIds.length === 0) return;
+
     // Find or create a default workspace
     let workspaceId: UUID;
     if (workspaces.length > 0) {
@@ -74,12 +89,16 @@ export function Sidebar() {
       workspaceId = ws.id;
     }
 
+    // Generate title from selected characters
+    const names = selectedIds.map((id) => getCharacter(id)?.name ?? "NPC");
+    const title = names.length <= 2 ? names.join("、") : `${names[0]}等${names.length}人`;
+
     const chat: Chat = {
       id: generateId(),
       workspaceId,
-      title: "新讨论",
+      title,
       status: "active",
-      characterIds: activeScenario.characters.map((c) => c.id),
+      characterIds: selectedIds,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -167,6 +186,16 @@ export function Sidebar() {
           </button>
         </div>
       </div>
+
+      {/* NPC Picker */}
+      {showNpcPicker && (
+        <NpcPicker
+          characters={ALL_CHARACTERS}
+          initialSelected={activeScenario.characters.map((c) => c.id)}
+          onConfirm={handleNpcPickerConfirm}
+          onCancel={() => setShowNpcPicker(false)}
+        />
+      )}
     </aside>
   );
 }
