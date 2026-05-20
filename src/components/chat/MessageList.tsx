@@ -107,16 +107,18 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
           <TypingIndicator characterId={typingCharacterId} />
         )}
 
-        {resolvedChoices.map((choice) => (
-          <ChoiceCard
-            key={choice.id}
-            question={choice.question}
-            options={choice.options}
-            selectedOptionId={choice.selectedOptionId}
-            onSelect={() => {}}
-            disabled
-          />
-        ))}
+        {resolvedChoices.map((choice) => {
+          const selectedOpt = choice.options.find((o) => o.id === choice.selectedOptionId);
+          return (
+            <div key={choice.id} className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary bg-background-chat dark:bg-dark-background-chat rounded-lg px-3 py-2 border border-border dark:border-dark-border">
+              <span className="font-medium">决策：</span>{choice.question}
+              {selectedOpt && (
+                <span className="ml-1">→ {selectedOpt.label}. {selectedOpt.description}</span>
+              )}
+              {choice.status === "skipped" && <span className="ml-1 text-foreground-secondary">（跳过）</span>}
+            </div>
+          );
+        })}
 
         {currentChoice && (
           <ChoiceCard

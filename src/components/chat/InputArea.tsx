@@ -77,6 +77,11 @@ export function InputArea({
     [onAddImages],
   );
 
+  // Auto-focus textarea on mount and when chat changes
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
   // Auto-resize textarea
   useEffect(() => {
     const el = textareaRef.current;
