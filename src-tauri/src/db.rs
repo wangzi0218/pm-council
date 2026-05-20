@@ -27,5 +27,11 @@ pub fn migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/004_chat_characters.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 5,
+            description: "seed_engineering_characters",
+            sql: include_str!("../migrations/005_seed_engineering_characters.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
