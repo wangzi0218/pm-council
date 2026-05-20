@@ -73,21 +73,8 @@ export function Sidebar() {
     setShowNpcPicker(false);
     if (selectedIds.length === 0) return;
 
-    // Find or create a default workspace
-    let workspaceId: UUID;
-    if (workspaces.length > 0) {
-      workspaceId = workspaces[0]!.id;
-    } else {
-      const ws: Workspace = {
-        id: generateId(),
-        name: "默认工作区",
-        background: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await addWorkspace(ws);
-      workspaceId = ws.id;
-    }
+    // Use first workspace (initApp guarantees at least one exists)
+    const workspaceId = workspaces[0]!.id;
 
     // Generate title from selected characters
     const names = selectedIds.map((id) => getCharacter(id)?.name ?? "NPC");
@@ -135,20 +122,7 @@ export function Sidebar() {
     }
 
     // Create new private chat
-    let workspaceId: UUID;
-    if (workspaces.length > 0) {
-      workspaceId = workspaces[0]!.id;
-    } else {
-      const ws: Workspace = {
-        id: generateId(),
-        name: "默认工作区",
-        background: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await addWorkspace(ws);
-      workspaceId = ws.id;
-    }
+    const workspaceId = workspaces[0]!.id;
 
     const char = getCharacter(characterId);
     const chat: Chat = {

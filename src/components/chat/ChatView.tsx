@@ -12,7 +12,7 @@ import { DEFAULT_SCENARIO } from "@/scenarios/registry";
 import { getCharacter } from "@/lib/characters";
 import { generateId } from "@/lib/utils";
 import { readImageFiles } from "@/lib/images";
-import type { Message, ImageAttachment, Skill, Character, Chat, Workspace } from "@/types";
+import type { Message, ImageAttachment, Skill, Character, Chat } from "@/types";
 import { Upload, X } from "lucide-react";
 
 export function ChatView() {
@@ -140,22 +140,9 @@ export function ChatView() {
       // 如果没有活跃讨论，自动创建一个
       let activeChatId = currentChatId;
       if (!activeChatId) {
-        let workspaceId = currentWorkspaceId;
-        if (!workspaceId && workspaces.length > 0) {
-          workspaceId = workspaces[0]!.id;
+        const workspaceId = currentWorkspaceId ?? workspaces[0]!.id;
+        if (!currentWorkspaceId) {
           useAppStore.setState({ currentWorkspaceId: workspaceId });
-        }
-        if (!workspaceId) {
-          const ws: Workspace = {
-            id: generateId(),
-            name: "默认工作区",
-            background: "",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          await useAppStore.getState().addWorkspace(ws);
-          workspaceId = ws.id;
-          useAppStore.setState({ currentWorkspaceId: ws.id });
         }
         const chat: Chat = {
           id: generateId(),
