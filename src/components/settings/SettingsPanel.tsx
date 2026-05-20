@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X, Bot, Users, Zap } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import { createProvider } from "@/llm/factory";
+import { PROVIDER_PRESETS } from "@/llm/presets";
 import { SkillManager } from "./SkillManager";
 import { CharacterManager } from "./CharacterManager";
 import type { LLMProviderType } from "@/types";
@@ -129,81 +130,18 @@ export function SettingsPanel() {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === "llm" && (
-            <div className="space-y-4">
-              {/* Provider */}
-              <div className="space-y-1.5">
-                <label className="text-sm">提供商</label>
-                <div className="flex gap-2">
-                  {(["openai", "claude"] as const).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => {
-                        setProvider(p);
-                        if (p === "openai") {
-                          setBaseUrl("https://api.openai.com/v1");
-                        } else {
-                          setBaseUrl("https://api.anthropic.com/v1");
-                        }
-                      }}
-                      className={`flex-1 px-3 py-2 text-sm rounded-md border transition-colors ${
-                        provider === p
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border dark:border-dark-border hover:bg-background-chat dark:hover:bg-dark-background-chat"
-                      }`}
-                    >
-                      {p === "openai" ? "OpenAI" : "Claude"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Base URL */}
-              <div className="space-y-1.5">
-                <label className="text-sm">API 地址</label>
-                <input
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="https://api.openai.com/v1"
-                />
-              </div>
-
-              {/* API Key */}
-              <div className="space-y-1.5">
-                <label className="text-sm">API Key</label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="sk-..."
-                />
-              </div>
-
-              {/* Model */}
-              <div className="space-y-1.5">
-                <label className="text-sm">模型</label>
-                <input
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="gpt-4o"
-                />
-              </div>
-
-              {/* Test */}
-              <button
-                onClick={handleTest}
-                className="w-full px-3 py-2 text-sm border border-border dark:border-dark-border rounded-md hover:bg-background-chat dark:hover:bg-dark-background-chat transition-colors"
-              >
-                测试连接
-              </button>
-              {testResult && (
-                <p className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary">
-                  {testResult}
-                </p>
-              )}
-            </div>
+            <LLMConfigTab
+              provider={provider}
+              baseUrl={baseUrl}
+              apiKey={apiKey}
+              model={model}
+              testResult={testResult}
+              onProviderChange={setProvider}
+              onBaseUrlChange={setBaseUrl}
+              onApiKeyChange={setApiKey}
+              onModelChange={setModel}
+              onTest={handleTest}
+            />
           )}
 
           {activeTab === "characters" && <CharacterManager />}
@@ -223,6 +161,136 @@ export function SettingsPanel() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LLM Config Tab
+// ---------------------------------------------------------------------------
+
+interface LLMConfigTabProps {
+  provider: LLMProviderType;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  testResult: string | null;
+  onProviderChange: (p: LLMProviderType) => void;
+  onBaseUrlChange: (url: string) => void;
+  onApiKeyChange: (key: string) => void;
+  onModelChange: (model: string) => void;
+  onTest: () => void;
+}
+
+function LLMConfigTab({
+  provider, baseUrl, apiKey, model, testResult,
+  onProviderChange, onBaseUrlChange, onApiKeyChange, onModelChange, onTest,
+}: LLMConfigTabProps) {
+  // Find current preset by matching baseUrl
+  const currentPreset = PROVIDER_PRESETS.find((p) => p.baseUrl === baseUrl && p.format === provider);
+  const [selectedPresetId, setSelectedPresetId] = useState(currentPreset?.id ?? "custom");
+
+  const handlePresetChange = (presetId: string) => {
+    setSelectedPresetId(presetId);
+    const preset = PROVIDER_PRESETS.find((p) => p.id === presetId);
+    if (preset && preset.id !== "custom") {
+      onProviderChange(preset.format);
+      onBaseUrlChange(preset.baseUrl);
+      onModelChange(preset.defaultModel);
+    }
+  };
+
+  const isCustom = selectedPresetId === "custom";
+
+  return (
+    <div className="space-y-4">
+      {/* Provider Preset */}
+      <div className="space-y-1.5">
+        <label className="text-sm">服务提供商</label>
+        <select
+          value={selectedPresetId}
+          onChange={(e) => handlePresetChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+          {PROVIDER_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Format indicator */}
+      <div className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary">
+        {isCustom ? "自定义配置" : `API 格式：${provider === "claude" ? "Claude Messages API" : "OpenAI 兼容"}`}
+      </div>
+
+      {/* API Key (always shown) */}
+      <div className="space-y-1.5">
+        <label className="text-sm">API Key</label>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={(e) => onApiKeyChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+          placeholder="sk-..."
+        />
+      </div>
+
+      {/* Base URL (editable for custom, shown but dimmed for presets) */}
+      <div className="space-y-1.5">
+        <label className="text-sm">API 地址</label>
+        <input
+          value={baseUrl}
+          onChange={(e) => onBaseUrlChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+          placeholder="https://api.openai.com/v1"
+        />
+      </div>
+
+      {/* Model */}
+      <div className="space-y-1.5">
+        <label className="text-sm">模型</label>
+        {currentPreset && currentPreset.models.length > 0 && !isCustom ? (
+          <div className="space-y-1.5">
+            <select
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              {currentPreset.models.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <input
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+              placeholder="或输入其他模型名"
+            />
+          </div>
+        ) : (
+          <input
+            value={model}
+            onChange={(e) => onModelChange(e.target.value)}
+            className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+            placeholder="gpt-4o"
+          />
+        )}
+      </div>
+
+      {/* Test */}
+      <button
+        onClick={onTest}
+        className="w-full px-3 py-2 text-sm border border-border dark:border-dark-border rounded-md hover:bg-background-chat dark:hover:bg-dark-background-chat transition-colors"
+      >
+        测试连接
+      </button>
+      {testResult && (
+        <p className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary">
+          {testResult}
+        </p>
+      )}
     </div>
   );
 }
