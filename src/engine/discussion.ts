@@ -68,7 +68,7 @@ export class DiscussionManager {
     const newMessages: Message[] = [];
 
     // 1. 决定发言顺序
-    const speakingOrder = this.determineSpeakingOrder(userContent);
+    const speakingOrder = this.determineSpeakingOrder(userContent, chars);
 
     // 2. 依次让 NPC 发言
     for (const characterId of speakingOrder) {
@@ -128,7 +128,7 @@ export class DiscussionManager {
     const newMessages: Message[] = [];
 
     // 1. 决定发言顺序
-    const speakingOrder = this.determineSpeakingOrder(userContent);
+    const speakingOrder = this.determineSpeakingOrder(userContent, chars);
 
     // 2. 依次让 NPC 发言（流式）
     for (const characterId of speakingOrder) {
@@ -398,26 +398,37 @@ export class DiscussionManager {
    */
   private determineSpeakingOrder(
     userInput: string,
+    activeCharacters?: Character[],
   ): string[] {
     const input = userInput.toLowerCase();
     const defaultOrder = this.scenario.speakingOrder;
-    const characters = this.scenario.characters;
 
-    // 基于关键词动态调整发言顺序
-    // 通用策略：检测"方案先行"→ 第一个角色先追问，"缺乏证据"→ 第二个角色先追问
-    if (characters.length >= 2) {
+    // Use the actual chat's characters, not just the scenario's
+    const charIds = activeCharacters?.map((c) => c.id) ?? this.scenario.characters.map((c) => c.id);
+
+    // Build order: scenario defaults first, then any additional characters
+    const orderedIds: string[] = [];
+    for (const id of defaultOrder) {
+      if (charIds.includes(id)) orderedIds.push(id);
+    }
+    for (const id of charIds) {
+      if (!orderedIds.includes(id)) orderedIds.push(id);
+    }
+
+    // 基于关键词动态调整前两个角色的顺序
+    if (orderedIds.length >= 2) {
       const proposalKeywords = ["方案", "功能", "加一个", "做一个", "实现"];
       if (proposalKeywords.some((k) => input.includes(k))) {
-        return [defaultOrder[0]!, ...defaultOrder.slice(1)];
+        return orderedIds;
       }
 
       const evidenceKeywords = ["肯定", "一定", "必然", "所有人都", "用户都喜欢"];
       if (evidenceKeywords.some((k) => input.includes(k))) {
-        return [defaultOrder[1]!, defaultOrder[0]!, ...defaultOrder.slice(2)];
+        return [orderedIds[1]!, orderedIds[0]!, ...orderedIds.slice(2)];
       }
     }
 
-    return [...defaultOrder];
+    return orderedIds;
   }
 
   /**
