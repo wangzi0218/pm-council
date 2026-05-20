@@ -208,25 +208,28 @@ function LLMConfigTab({
       <div className="space-y-1.5">
         <label className="text-sm">服务提供商</label>
         <div className="grid grid-cols-4 gap-2">
-          {PROVIDER_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => handlePresetChange(p.id)}
-              className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-lg border transition-all ${
-                selectedPresetId === p.id
-                  ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                  : "border-border dark:border-dark-border hover:border-foreground/20 dark:hover:border-dark-foreground/20"
-              }`}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: p.color }}
+          {PROVIDER_PRESETS.map((p) => {
+            const Icon = p.icon;
+            return (
+              <button
+                key={p.id}
+                onClick={() => handlePresetChange(p.id)}
+                className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-lg border transition-all ${
+                  selectedPresetId === p.id
+                    ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                    : "border-border dark:border-dark-border hover:border-foreground/20 dark:hover:border-dark-foreground/20"
+                }`}
               >
-                {p.icon}
-              </div>
-              <span className="text-[11px] font-medium leading-tight text-center">{p.name}</span>
-            </button>
-          ))}
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+                  style={{ backgroundColor: p.color }}
+                >
+                  <Icon size={16} />
+                </div>
+                <span className="text-[11px] font-medium leading-tight text-center">{p.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -261,31 +264,16 @@ function LLMConfigTab({
       {/* Model */}
       <div className="space-y-1.5">
         <label className="text-sm">模型</label>
-        {currentPreset && currentPreset.models.length > 0 && !isCustom ? (
-          <div className="space-y-1.5">
-            <select
-              value={model}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              {currentPreset.models.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <input
-              value={model}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-              placeholder="或输入其他模型名"
-            />
-          </div>
-        ) : (
-          <input
-            value={model}
-            onChange={(e) => onModelChange(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-            placeholder="gpt-4o"
-          />
+        <input
+          value={model}
+          onChange={(e) => onModelChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm bg-background-chat dark:bg-dark-background-chat rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+          placeholder={isCustom ? "模型名称" : currentPreset?.defaultModel ?? "模型名称"}
+        />
+        {currentPreset && !isCustom && (
+          <p className="text-[11px] text-foreground-secondary dark:text-dark-foreground-secondary">
+            默认：{currentPreset.defaultModel}，可自行修改
+          </p>
         )}
       </div>
 
