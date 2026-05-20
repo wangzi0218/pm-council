@@ -285,7 +285,7 @@ export function ChatView() {
         onDrop={handleDrop}
       >
         <ChatHeader onOpenSettings={() => setShowChatSettings(true)} />
-        <EmptyState />
+        <EmptyState characterCount={chatCharacters.length} />
         {errorMessage && (
           <div className="mx-4 mb-2 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-sm text-red-600 dark:bg-red-950/30 dark:border-red-800/40 dark:text-red-400">
             <span className="flex-1">{errorMessage.text}</span>

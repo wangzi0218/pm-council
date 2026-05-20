@@ -15,9 +15,9 @@ export const PM_SCENARIO: Scenario = {
   characters: CHARACTERS,
   speakingOrder: ["xiao-lin", "lao-chen", "a-zhe"],
   speakingDelay: {
-    "xiao-lin": 500,
-    "lao-chen": 1000,
-    "a-zhe": 1500,
+    "xiao-lin": 200,
+    "lao-chen": 400,
+    "a-zhe": 600,
   },
   fallbackResponses: {
     "xiao-lin": "我有个疑问，能再详细说说吗？",

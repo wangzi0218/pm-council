@@ -180,7 +180,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const msg = state.streamingMessages.get(messageId);
     if (!msg) return;
 
-    // Remove from streaming map
+    // Remove from streaming map FIRST, then add to messages[]
+    // This prevents displayMessages from showing the message twice
     const newMap = new Map(state.streamingMessages);
     newMap.delete(messageId);
     set({ streamingMessages: newMap });

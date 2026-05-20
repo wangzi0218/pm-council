@@ -14,9 +14,9 @@ export const ENGINEERING_REVIEW_SCENARIO: Scenario = {
   characters: CHARACTERS,
   speakingOrder: ["lao-zhou", "xiao-yang", "a-an"],
   speakingDelay: {
-    "lao-zhou": 1000,   // 架构师想清楚再说
-    "xiao-yang": 500,   // QA 反应快，边界条件张口就来
-    "a-an": 800,        // 安全工程师稳一手
+    "lao-zhou": 400,
+    "xiao-yang": 200,
+    "a-an": 300,
   },
   fallbackResponses: {
     "lao-zhou": "这个问题需要从系统层面再看看。",

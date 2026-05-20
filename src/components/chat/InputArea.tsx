@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Paperclip, X } from "lucide-react";
 import { useChatStore } from "@/store/chatStore";
+import { useAppStore } from "@/store/appStore";
 import { readImageFiles } from "@/lib/images";
 import type { ImageAttachment } from "@/types";
 
@@ -78,9 +79,10 @@ export function InputArea({
   );
 
   // Auto-focus textarea on mount and when chat changes
+  const currentChatId = useAppStore((s) => s.currentChatId);
   useEffect(() => {
     textareaRef.current?.focus();
-  }, []);
+  }, [currentChatId]);
 
   // Auto-resize textarea
   useEffect(() => {
