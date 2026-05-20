@@ -16,6 +16,7 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
   const messages = useChatStore((s) => s.messages);
   const isTyping = useChatStore((s) => s.isTyping);
   const typingCharacterId = useChatStore((s) => s.typingCharacterId);
+  const isLoading = useChatStore((s) => s.isLoading);
   const currentChatId = useAppStore((s) => s.currentChatId);
   const currentChoice = useChatStore((s) => s.currentChoice);
   const resolvedChoices = useChatStore((s) => s.resolvedChoices);
@@ -24,6 +25,7 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const prevChatIdRef = useRef<string | null>(null);
+  const prevIsLoadingRef = useRef(false);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const el = scrollRef.current;
@@ -31,13 +33,22 @@ export function MessageList({ onSelectChoice, onSkipChoice }: MessageListProps) 
     el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
 
-  // Reset scroll to bottom when switching conversations
+  // Reset scroll to bottom when switching conversations or messages finish loading
   useEffect(() => {
+    const justFinishedLoading = prevIsLoadingRef.current && !isLoading;
+    prevIsLoadingRef.current = isLoading;
+
     if (currentChatId !== prevChatIdRef.current) {
       prevChatIdRef.current = currentChatId;
+      // Wait for messages to load, then scroll
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollToBottom("instant"));
+      });
+    } else if (justFinishedLoading) {
+      // Messages just loaded for current chat, scroll to bottom
       requestAnimationFrame(() => scrollToBottom("instant"));
     }
-  }, [currentChatId, scrollToBottom]);
+  }, [currentChatId, isLoading, scrollToBottom]);
 
   // Auto-scroll when messages change or typing starts
   useEffect(() => {

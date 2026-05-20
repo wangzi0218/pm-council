@@ -10,6 +10,7 @@ interface ChatState {
   resolvedChoices: Choice[];
   isLoading: boolean;
   streamingMessageId: UUID | null;
+  streamingChatId: UUID | null;
   errorMessage: { text: string; showSettingsLink: boolean } | null;
 
   loadMessages: (chatId: UUID) => Promise<void>;
@@ -37,6 +38,7 @@ export const useChatStore = create<ChatState>((set) => ({
   resolvedChoices: [],
   isLoading: false,
   streamingMessageId: null,
+  streamingChatId: null,
   errorMessage: null,
 
   loadMessages: async (chatId) => {
@@ -46,7 +48,15 @@ export const useChatStore = create<ChatState>((set) => ({
         db.listMessages(chatId),
         db.getResolvedChoices(chatId),
       ]);
-      set({ messages, resolvedChoices });
+      // Preserve in-progress streaming messages from the previous chat
+      const state = useChatStore.getState();
+      const streamingMsg = state.streamingMessageId && state.streamingChatId !== chatId
+        ? state.messages.find((m) => m.id === state.streamingMessageId)
+        : null;
+      set({
+        messages: streamingMsg ? [...messages, streamingMsg] : messages,
+        resolvedChoices,
+      });
     } finally {
       set({ isLoading: false });
     }
@@ -152,6 +162,7 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       messages: [...state.messages, { ...message, content: "" }],
       streamingMessageId: message.id,
+      streamingChatId: message.chatId,
     })),
 
   appendStreamChunk: (messageId, chunk) =>
@@ -164,7 +175,7 @@ export const useChatStore = create<ChatState>((set) => ({
   finishStreaming: async (messageId) => {
     const state = useChatStore.getState();
     const msg = state.messages.find((m) => m.id === messageId);
-    set({ streamingMessageId: null });
+    set({ streamingMessageId: null, streamingChatId: null });
     if (msg) {
       try {
         await db.createMessage(msg);
