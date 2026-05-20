@@ -323,14 +323,46 @@ interface ChatItemProps {
 }
 
 function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(chat.title);
+  const updateChat = useAppStore((s) => s.updateChat);
+
+  const handleRename = async () => {
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== chat.title) {
+      await updateChat(chat.id, { title: trimmed });
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="px-2 py-1">
+        <input
+          autoFocus
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={handleRename}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleRename();
+            if (e.key === "Escape") { setEditing(false); setEditTitle(chat.title); }
+          }}
+          className="w-full px-2 py-1 text-sm bg-background dark:bg-dark-background border border-primary rounded-md focus:outline-none"
+        />
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={onClick}
+      onDoubleClick={() => { setEditing(true); setEditTitle(chat.title); }}
       className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
         isActive
           ? "bg-primary/10 text-primary border-l-[3px] border-l-primary"
           : "text-foreground dark:text-dark-foreground hover:bg-background dark:hover:bg-dark-background"
       }`}
+      title="双击改名"
     >
       <div className="truncate font-medium">{chat.title}</div>
       <div className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary mt-0.5">

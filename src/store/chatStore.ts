@@ -28,6 +28,7 @@ interface ChatState {
   finishStreaming: (messageId: UUID) => Promise<void>;
   setErrorMessage: (text: string, showSettingsLink?: boolean) => void;
   clearErrorMessage: () => void;
+  deleteMessage: (messageId: UUID) => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -48,7 +49,7 @@ export const useChatStore = create<ChatState>((set) => ({
         db.listMessages(chatId),
         db.getResolvedChoices(chatId),
       ]);
-      // Preserve in-progress streaming messages from the previous chat
+      // Preserve in-progress streaming message if it's from a different chat
       const state = useChatStore.getState();
       const streamingMsg = state.streamingMessageId && state.streamingChatId !== chatId
         ? state.messages.find((m) => m.id === state.streamingMessageId)
@@ -56,6 +57,7 @@ export const useChatStore = create<ChatState>((set) => ({
       set({
         messages: streamingMsg ? [...messages, streamingMsg] : messages,
         resolvedChoices,
+        streamingChatId: streamingMsg ? state.streamingChatId : null,
       });
     } finally {
       set({ isLoading: false });
@@ -156,7 +158,23 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
   clearMessages: () =>
-    set({ messages: [], currentChoice: null, resolvedChoices: [], isTyping: false, typingCharacterId: null, streamingMessageId: null, errorMessage: null }),
+    set((state) => {
+      // Preserve in-progress streaming message if it belongs to a different chat
+      const streamingMsg = state.streamingMessageId
+        ? state.messages.find((m) => m.id === state.streamingMessageId)
+        : null;
+      return {
+        messages: streamingMsg ? [streamingMsg] : [],
+        currentChoice: null,
+        resolvedChoices: [],
+        isTyping: false,
+        typingCharacterId: null,
+        // Don't clear streamingMessageId if we're preserving the message
+        streamingMessageId: streamingMsg ? state.streamingMessageId : null,
+        streamingChatId: streamingMsg ? state.streamingChatId : null,
+        errorMessage: null,
+      };
+    }),
 
   startStreamingMessage: (message) =>
     set((state) => ({
@@ -188,4 +206,15 @@ export const useChatStore = create<ChatState>((set) => ({
   setErrorMessage: (text, showSettingsLink = false) =>
     set({ errorMessage: { text, showSettingsLink } }),
   clearErrorMessage: () => set({ errorMessage: null }),
+
+  deleteMessage: async (messageId) => {
+    set((state) => ({
+      messages: state.messages.filter((m) => m.id !== messageId),
+    }));
+    try {
+      await db.deleteMessage(messageId);
+    } catch (e) {
+      console.error("Failed to delete message:", e);
+    }
+  },
 }));
