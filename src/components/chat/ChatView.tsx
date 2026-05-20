@@ -116,10 +116,10 @@ export function ChatView() {
             appendStreamChunk(msgId, chunk);
           },
           (msg) => {
-            if (msg.characterId) setTyping(msg.characterId);
+            if (msg.characterId) setTyping(msg.characterId, currentChatId);
             startStreamingMessage(msg);
           },
-          (characterId) => setTyping(characterId),
+          (characterId) => setTyping(characterId, currentChatId),
           (msgId) => finishStreaming(msgId),
           workspaces.find((w) => w.id === currentWorkspaceId)?.background,
           undefined,
@@ -127,10 +127,10 @@ export function ChatView() {
           chatCharacters,
         );
 
-        setTyping(null);
+        setTyping(null, currentChatId);
         archiveCurrentChoice();
       } catch (err) {
-        setTyping(null);
+        setTyping(null, currentChatId);
         archiveCurrentChoice();
         const parsed = parseLLMError(err);
         setErrorMessage(parsed.text, parsed.showSettingsLink);
@@ -195,13 +195,13 @@ export function ChatView() {
           // onMessageStart: 创建空消息，设置 typing 状态
           (msg) => {
             if (msg.characterId) {
-              setTyping(msg.characterId);
+              setTyping(msg.characterId, activeChatId);
             }
             startStreamingMessage(msg);
           },
           // onTypingStart: 发言前显示 typing indicator
           (characterId) => {
-            setTyping(characterId);
+            setTyping(characterId, activeChatId);
           },
           // onStreamEnd: 每个 NPC 完成后立即从 streaming map 移除
           (msgId) => {
@@ -214,14 +214,14 @@ export function ChatView() {
           chatCharacters,
         );
 
-        setTyping(null);
+        setTyping(null, activeChatId);
 
         // 如果有选择点，设置到 store 并持久化
         if (result.choice) {
           await createChoice(result.choice);
         }
       } catch (err) {
-        setTyping(null);
+        setTyping(null, activeChatId);
         const msg = parseLLMError(err);
         setErrorMessage(msg.text, msg.showSettingsLink);
       }

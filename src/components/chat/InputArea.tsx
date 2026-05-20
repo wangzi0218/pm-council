@@ -22,11 +22,16 @@ export function InputArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isTyping = useChatStore((s) => s.isTyping);
+  const typingChatId = useChatStore((s) => s.typingChatId);
+
+  // Only disable input if typing is in the CURRENT chat
+  const currentChatId = useAppStore((s) => s.currentChatId);
+  const isTypingInThisChat = isTyping && typingChatId === currentChatId;
 
   const handleSend = useCallback(() => {
     const content = input.trim();
     if (!content && pendingImages.length === 0) return;
-    if (isTyping) return;
+    if (isTypingInThisChat) return;
 
     onSendMessage(content, pendingImages);
     setInput("");
@@ -79,7 +84,6 @@ export function InputArea({
   );
 
   // Auto-focus textarea on mount and when chat changes
-  const currentChatId = useAppStore((s) => s.currentChatId);
   useEffect(() => {
     textareaRef.current?.focus();
   }, [currentChatId]);
@@ -92,7 +96,7 @@ export function InputArea({
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
   }, [input]);
 
-  const canSend = !isTyping && (input.trim() || pendingImages.length > 0);
+  const canSend = !isTypingInThisChat && (input.trim() || pendingImages.length > 0);
 
   return (
     <div className="border-t border-border dark:border-dark-border p-4">
@@ -129,7 +133,7 @@ export function InputArea({
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={isTyping}
+          disabled={isTypingInThisChat}
           className="p-2 text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors disabled:opacity-50 rounded-full hover:bg-background-chat dark:hover:bg-dark-background-chat"
           aria-label="上传图片"
         >
@@ -141,7 +145,7 @@ export function InputArea({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          disabled={isTyping}
+          disabled={isTypingInThisChat}
           placeholder="在这里输入你的想法、反馈、或贴一张图..."
           rows={1}
           className="flex-1 resize-none bg-background-chat dark:bg-dark-background-chat rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 placeholder:text-foreground-secondary dark:placeholder:text-dark-foreground-secondary"

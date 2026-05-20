@@ -9,6 +9,8 @@ interface ChatState {
   streamingMessages: Map<UUID, Message>;
   isTyping: boolean;
   typingCharacterId: UUID | null;
+  /** Which chat the typing indicator belongs to */
+  typingChatId: UUID | null;
   currentChoice: Choice | null;
   resolvedChoices: Choice[];
   isLoading: boolean;
@@ -16,7 +18,7 @@ interface ChatState {
 
   loadMessages: (chatId: UUID) => Promise<void>;
   addMessage: (message: Message) => Promise<void>;
-  setTyping: (characterId: UUID | null) => void;
+  setTyping: (characterId: UUID | null, chatId?: UUID | null) => void;
   setCurrentChoice: (choice: Choice | null) => void;
   createChoice: (choice: Choice) => Promise<void>;
   selectChoiceOption: (choiceId: UUID, optionId: UUID) => Promise<void>;
@@ -37,6 +39,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streamingMessages: new Map(),
   isTyping: false,
   typingCharacterId: null,
+  typingChatId: null,
   currentChoice: null,
   resolvedChoices: [],
   isLoading: false,
@@ -64,8 +67,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  setTyping: (characterId) =>
-    set({ isTyping: characterId !== null, typingCharacterId: characterId }),
+  setTyping: (characterId, chatId) =>
+    set({ isTyping: characterId !== null, typingCharacterId: characterId, typingChatId: chatId ?? null }),
 
   setCurrentChoice: (choice) => set({ currentChoice: choice }),
 
