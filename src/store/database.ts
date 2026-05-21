@@ -53,11 +53,26 @@ interface SkillRow {
 // DatabaseManager 单例
 // ---------------------------------------------------------------------------
 
+/** Mock DB for browser debugging (no Tauri runtime) */
+function createMockDb(): Database {
+  return {
+    execute: async () => {},
+    select: async <T>(): Promise<T[]> => {
+      return [] as T[];
+    },
+  } as unknown as Database;
+}
+
 class DatabaseManager {
   private db: Database | null = null;
 
   async init(): Promise<void> {
-    this.db = await Database.load("sqlite:app.db");
+    try {
+      this.db = await Database.load("sqlite:app.db");
+    } catch {
+      // Browser fallback — no Tauri runtime
+      this.db = createMockDb();
+    }
   }
 
   private getDb(): Database {

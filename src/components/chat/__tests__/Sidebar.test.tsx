@@ -62,11 +62,6 @@ describe("Sidebar", () => {
     expect(screen.getByText("我的团队")).toBeInTheDocument();
   });
 
-  it("renders search input", () => {
-    render(<Sidebar />);
-    expect(screen.getByPlaceholderText("搜索对话...")).toBeInTheDocument();
-  });
-
   it("renders 全员大群 button", () => {
     render(<Sidebar />);
     expect(screen.getByText("全员大群")).toBeInTheDocument();
@@ -92,21 +87,6 @@ describe("Sidebar", () => {
     render(<Sidebar />);
     fireEvent.click(screen.getByLabelText("设置"));
     expect(mockOpenSettings).toHaveBeenCalled();
-  });
-
-  it("filters chats by search query", () => {
-    render(<Sidebar />);
-    const searchInput = screen.getByPlaceholderText("搜索对话...");
-    fireEvent.change(searchInput, { target: { value: "小林" } });
-    expect(screen.getByText("小林等3人")).toBeInTheDocument();
-    expect(screen.getAllByText("小林").length).toBeGreaterThan(0);
-  });
-
-  it("shows no results for unmatched search", () => {
-    render(<Sidebar />);
-    const searchInput = screen.getByPlaceholderText("搜索对话...");
-    fireEvent.change(searchInput, { target: { value: "不存在的对话" } });
-    expect(screen.getByText("没有匹配的对话")).toBeInTheDocument();
   });
 
   it("calls setCurrentChat when chat clicked", () => {

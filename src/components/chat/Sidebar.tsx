@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
-import { Plus, Settings, Search } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { generateId } from "@/lib/utils";
 import { useChatStore } from "@/store/chatStore";
 import { getScenario, DEFAULT_SCENARIO, SCENARIOS } from "@/scenarios/registry";
@@ -25,7 +25,6 @@ export function Sidebar() {
   const workspaces = useAppStore((s) => s.workspaces);
 
   const [showNpcPicker, setShowNpcPicker] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const currentScenarioId = useAppStore((s) => s.currentScenarioId);
   const activeScenario = getScenario(currentScenarioId) ?? DEFAULT_SCENARIO;
@@ -34,13 +33,6 @@ export function Sidebar() {
   const sortedChats = [...chats].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
-
-  // Filter by search
-  const filteredChats = searchQuery
-    ? sortedChats.filter((c) =>
-        c.title.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : sortedChats;
 
   // Find or create "全员大群"
   const allGroupChat = chats.find((c) => c.title === "全员大群");
@@ -114,22 +106,6 @@ export function Sidebar() {
         </h1>
       </div>
 
-      {/* Search */}
-      <div className="px-4 py-2">
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-secondary dark:text-dark-foreground-secondary"
-          />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索对话..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-background dark:bg-dark-background rounded-md border border-border dark:border-dark-border focus:outline-none focus:ring-1 focus:ring-primary/50"
-          />
-        </div>
-      </div>
-
       {/* All Group — pinned */}
       <div className="px-2 pb-1">
         <button
@@ -160,12 +136,12 @@ export function Sidebar() {
 
       {/* Chat List — flat, sorted by time */}
       <div className="flex-1 overflow-y-auto px-2">
-        {filteredChats.length === 0 ? (
+        {sortedChats.length === 0 ? (
           <div className="text-xs text-foreground-secondary dark:text-dark-foreground-secondary px-2 py-8 text-center">
-            {searchQuery ? "没有匹配的对话" : "暂无对话，点击新建"}
+            暂无对话，点击新建
           </div>
         ) : (
-          filteredChats.map((chat) => (
+          sortedChats.map((chat) => (
             <ChatListItem
               key={chat.id}
               chat={chat}
