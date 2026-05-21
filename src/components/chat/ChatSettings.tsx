@@ -53,7 +53,7 @@ export function ChatSettings({ chat, onClose }: ChatSettingsProps) {
       <div className="relative w-[360px] bg-background dark:bg-dark-background border-l border-border dark:border-dark-border flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-dark-border">
-          <h3 className="text-sm font-semibold">群聊设置</h3>
+          <h3 className="text-sm font-semibold">{characterIds.length > 1 ? "群聊设置" : "对话设置"}</h3>
           <button onClick={onClose} className="p-1 hover:bg-background-chat dark:hover:bg-dark-background-chat rounded-md">
             <X size={16} />
           </button>

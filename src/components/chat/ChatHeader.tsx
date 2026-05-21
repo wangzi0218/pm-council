@@ -19,7 +19,7 @@ export function ChatHeader({ onOpenSettings }: ChatHeaderProps) {
         <button
           onClick={onOpenSettings}
           className="p-1.5 hover:bg-background-chat dark:hover:bg-dark-background-chat rounded-md transition-colors"
-          title="群聊设置"
+          title="对话设置"
         >
           <Settings size={16} className="text-foreground-secondary dark:text-dark-foreground-secondary" />
         </button>

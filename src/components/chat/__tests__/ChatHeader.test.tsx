@@ -39,7 +39,7 @@ describe("ChatHeader", () => {
     });
 
     render(<ChatHeader onOpenSettings={mockOnOpenSettings} />);
-    expect(screen.getByTitle("群聊设置")).toBeInTheDocument();
+    expect(screen.getByTitle("对话设置")).toBeInTheDocument();
   });
 
   it("calls onOpenSettings when gear clicked", () => {
@@ -51,7 +51,7 @@ describe("ChatHeader", () => {
     });
 
     render(<ChatHeader onOpenSettings={mockOnOpenSettings} />);
-    fireEvent.click(screen.getByTitle("群聊设置"));
+    fireEvent.click(screen.getByTitle("对话设置"));
     expect(mockOnOpenSettings).toHaveBeenCalled();
   });
 
@@ -64,7 +64,7 @@ describe("ChatHeader", () => {
     });
 
     render(<ChatHeader />);
-    expect(screen.queryByTitle("群聊设置")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("对话设置")).not.toBeInTheDocument();
   });
 
   it("renders nothing when no current chat", () => {

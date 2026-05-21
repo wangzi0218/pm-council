@@ -29,10 +29,10 @@ export function Sidebar() {
   const currentScenarioId = useAppStore((s) => s.currentScenarioId);
   const activeScenario = getScenario(currentScenarioId) ?? DEFAULT_SCENARIO;
 
-  // Sort chats by most recent
-  const sortedChats = [...chats].sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
+  // Sort chats by most recent, excluding 全员大群 (shown as pinned)
+  const sortedChats = [...chats]
+    .filter((c) => c.title !== "全员大群")
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   // Find or create "全员大群"
   const allGroupChat = chats.find((c) => c.title === "全员大群");
