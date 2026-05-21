@@ -137,7 +137,8 @@ export class DiscussionManager {
       if (!character) continue;
 
       const allMessages = [...recentMessages, ...newMessages];
-      const systemPrompt = buildSystemPrompt(character, allMessages, [], background, previousContext, characterSkills?.[characterId]);
+      const charMap = this.getCharacterMap();
+      const systemPrompt = buildSystemPrompt(character, allMessages, [], background, previousContext, characterSkills?.[characterId], charMap);
       const chatMessages = this.buildChatMessages(systemPrompt, allMessages, images);
 
       // 发言前延迟：模拟思考节奏
@@ -220,7 +221,8 @@ export class DiscussionManager {
     previousContext?: string,
     activeSkills?: Skill[],
   ): Promise<Message> {
-    const systemPrompt = buildSystemPrompt(character, recentMessages, [], background, previousContext, activeSkills);
+    const charMap = this.getCharacterMap();
+    const systemPrompt = buildSystemPrompt(character, recentMessages, [], background, previousContext, activeSkills, charMap);
     const chatMessages = this.buildChatMessages(systemPrompt, recentMessages, userImages);
 
     const request = {
@@ -253,6 +255,10 @@ export class DiscussionManager {
   /**
    * 检测分歧并生成选择点
    */
+  private getCharacterMap(): Map<string, { name: string }> {
+    return new Map(this.scenario.characters.map((c) => [c.id, { name: c.name }]));
+  }
+
   private async checkAndGenerateChoice(
     chatId: UUID,
     messages: Message[],
@@ -261,7 +267,8 @@ export class DiscussionManager {
     if (npcMessages.length < 2) return undefined;
 
     try {
-      const divergencePrompt = buildDivergencePrompt(messages);
+      const charMap = this.getCharacterMap();
+      const divergencePrompt = buildDivergencePrompt(messages, charMap);
       const response = await this.provider.chat({
         messages: [
           { role: "system", content: "你是一个讨论分析助手，只输出 JSON。" },
@@ -291,9 +298,11 @@ export class DiscussionManager {
     divergenceInfo: Record<string, unknown>,
   ): Promise<Choice | undefined> {
     try {
+      const charMap = this.getCharacterMap();
       const prompt = buildChoiceGenerationPrompt(
         JSON.stringify(divergenceInfo),
         messages,
+        charMap,
       );
 
       const response = await this.provider.chat({

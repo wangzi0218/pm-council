@@ -11,8 +11,9 @@ export function buildSystemPrompt(
   background?: string,
   previousContext?: string,
   activeSkills?: Skill[],
+  characterMap?: Map<string, { name: string }>,
 ): string {
-  const messageBlock = formatMessagesForPrompt(recentMessages);
+  const messageBlock = formatMessagesForPrompt(recentMessages, characterMap);
   const backgroundBlock = background?.trim()
     ? `\n# 项目背景\n${background.trim()}\n`
     : "";
@@ -48,8 +49,9 @@ ${messageBlock}
 export function buildConvergencePrompt(
   recentMessages: Message[],
   characterNames: string,
+  characterMap?: Map<string, { name: string }>,
 ): string {
-  const messageBlock = formatMessagesForPrompt(recentMessages);
+  const messageBlock = formatMessagesForPrompt(recentMessages, characterMap);
 
   return `你是一个讨论分析助手。请分析以下讨论，判断讨论是否已经可以收敛。
 
@@ -76,8 +78,9 @@ ${messageBlock}
  */
 export function buildDivergencePrompt(
   recentMessages: Message[],
+  characterMap?: Map<string, { name: string }>,
 ): string {
-  const messageBlock = formatMessagesForPrompt(recentMessages);
+  const messageBlock = formatMessagesForPrompt(recentMessages, characterMap);
 
   return `你是一个讨论分析助手。请分析以下讨论中是否存在明显的观点分歧。
 
@@ -107,8 +110,9 @@ ${messageBlock}
 export function buildChoiceGenerationPrompt(
   divergenceInfo: string,
   recentMessages: Message[],
+  characterMap?: Map<string, { name: string }>,
 ): string {
-  const messageBlock = formatMessagesForPrompt(recentMessages);
+  const messageBlock = formatMessagesForPrompt(recentMessages, characterMap);
 
   return `你是一个讨论分析助手。讨论中出现了分歧，需要生成一个选择点让用户做决定。
 
@@ -142,7 +146,7 @@ ${messageBlock}
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function formatMessagesForPrompt(messages: Message[]): string {
+function formatMessagesForPrompt(messages: Message[], characterMap?: Map<string, { name: string }>): string {
   return messages
     .slice(-10)
     .map((m) => {
@@ -150,8 +154,8 @@ function formatMessagesForPrompt(messages: Message[]): string {
         return `用户：${m.content}`;
       }
       if (m.role === "character") {
-        // Character name will be resolved from the character map
-        return `[${m.characterId ?? "NPC"}]：${m.content}`;
+        const name = m.characterId ? characterMap?.get(m.characterId)?.name ?? m.characterId : "NPC";
+        return `[${name}]：${m.content}`;
       }
       return `系统：${m.content}`;
     })

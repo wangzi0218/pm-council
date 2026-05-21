@@ -149,17 +149,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   skipChoice: async (choiceId) => {
     set((state) => {
       if (state.currentChoice?.id !== choiceId) return state;
+      const skippedChoice = {
+        ...state.currentChoice,
+        status: "skipped" as const,
+        resolvedAt: new Date().toISOString(),
+      };
+      const lastMsgId = state.messages[state.messages.length - 1]?.id;
       return {
-        currentChoice: {
-          ...state.currentChoice,
-          status: "skipped" as const,
-          resolvedAt: new Date().toISOString(),
-        },
+        currentChoice: null,
+        resolvedChoices: [...state.resolvedChoices, { ...skippedChoice, archivedAfterMessageId: lastMsgId }],
       };
     });
-    setTimeout(() => {
-      set({ currentChoice: null });
-    }, 300);
     try {
       await db.updateChoice(choiceId, {
         status: "skipped",
@@ -179,6 +179,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       resolvedChoices: [],
       isTyping: false,
       typingCharacterId: null,
+      typingChatId: null,
       errorMessage: null,
       // streamingMessages NOT cleared — they belong to their own chats
     }),
@@ -205,14 +206,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const msg = state.streamingMessages.get(messageId);
     if (!msg) return;
 
-    // Remove from streaming map FIRST, then add to messages[]
-    // This prevents displayMessages from showing the message twice
+    // Remove from streaming map
     const newMap = new Map(state.streamingMessages);
     newMap.delete(messageId);
     set({ streamingMessages: newMap });
 
-    // Add to messages[] so it stays visible after streaming ends
-    set((s) => ({ messages: [...s.messages, msg] }));
+    // Only add to messages[] if it belongs to the current chat
+    if (msg.chatId === state.messages[0]?.chatId || state.messages.length === 0) {
+      set((s) => ({ messages: [...s.messages, msg] }));
+    }
 
     // Persist to DB
     try {
