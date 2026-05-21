@@ -131,7 +131,7 @@ export function InputArea({
       )}
 
       {/* Input row */}
-      <div className="flex-1 flex items-end gap-2">
+      <div className="flex-1 flex items-center gap-2">
         <input
           type="file"
           ref={fileInputRef}
