@@ -1,4 +1,4 @@
-import { getCharacterName, getCharacterColor } from "@/lib/characters";
+import { getCharacter, getCharacterName, getCharacterColor } from "@/lib/characters";
 
 interface TypingIndicatorProps {
   characterId: string;
@@ -7,6 +7,8 @@ interface TypingIndicatorProps {
 export function TypingIndicator({ characterId }: TypingIndicatorProps) {
   const name = getCharacterName(characterId);
   const color = getCharacterColor(characterId);
+  const character = getCharacter(characterId);
+  const avatar = character?.avatar ?? name[0];
 
   return (
     <div className="flex gap-3">
@@ -14,7 +16,7 @@ export function TypingIndicator({ characterId }: TypingIndicatorProps) {
         className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold"
         style={{ backgroundColor: color }}
       >
-        {name[0]}
+        {avatar}
       </div>
       <div>
         <div className="flex items-center gap-2 mb-1">

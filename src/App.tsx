@@ -10,10 +10,26 @@ function App() {
   const viewingCharacterId = useAppStore((s) => s.viewingCharacterId);
   const isReady = useAppStore((s) => s.isReady);
   const initApp = useAppStore((s) => s.initApp);
+  const theme = useAppStore((s) => s.settings.theme);
 
   useEffect(() => {
     initApp();
   }, [initApp]);
+
+  // Apply dark mode class to <html> based on theme setting
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("light", "dark");
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else if (theme === "light") {
+      root.classList.add("light");
+    } else {
+      // system: follow OS preference
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.add(prefersDark ? "dark" : "light");
+    }
+  }, [theme]);
 
   if (!isReady) {
     return (

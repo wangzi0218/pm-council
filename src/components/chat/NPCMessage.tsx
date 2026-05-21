@@ -14,6 +14,7 @@ export function NPCMessage({ message, isStreaming }: NPCMessageProps) {
     : undefined;
 
   const name = character?.name ?? "NPC";
+  const avatar = character?.avatar ?? name[0];
   const color = character?.color ?? "#6b7280";
   const quote = message.metadata?.quote;
 
@@ -24,7 +25,7 @@ export function NPCMessage({ message, isStreaming }: NPCMessageProps) {
         className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white text-xs font-bold"
         style={{ backgroundColor: color }}
       >
-        {name[0]}
+        {avatar}
       </div>
 
       {/* Content */}

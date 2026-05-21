@@ -83,7 +83,16 @@ export function InputArea({
     [onAddImages],
   );
 
-  // Auto-focus textarea on mount and when chat changes
+  // Auto-focus textarea on mount, chat change, or when NPC finishes typing
+  const prevTypingRef = useRef(isTypingInThisChat);
+  useEffect(() => {
+    if (prevTypingRef.current && !isTypingInThisChat) {
+      // NPC just finished typing — refocus input
+      textareaRef.current?.focus();
+    }
+    prevTypingRef.current = isTypingInThisChat;
+  }, [isTypingInThisChat]);
+
   useEffect(() => {
     textareaRef.current?.focus();
   }, [currentChatId]);
