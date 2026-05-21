@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Bot, Users, Zap } from "lucide-react";
+import { X, Bot, Users, Zap, Download, Upload } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
+import { useChatStore } from "@/store/chatStore";
+import { db } from "@/store/database";
 import { createProvider } from "@/llm/factory";
 import { PROVIDER_PRESETS } from "@/llm/presets";
 import { SkillManager } from "./SkillManager";
@@ -146,6 +148,65 @@ export function SettingsPanel() {
 
           {activeTab === "characters" && <CharacterManager />}
           {activeTab === "skills" && <SkillManager />}
+
+          {/* Data Management — always visible */}
+          <div className="pt-4 mt-4 border-t border-border dark:border-dark-border space-y-3">
+            <h3 className="text-sm font-medium text-foreground-secondary dark:text-dark-foreground-secondary">
+              数据管理
+            </h3>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const workspaces = useAppStore.getState().workspaces;
+                    if (workspaces.length === 0) return;
+                    const json = await db.exportWorkspace(workspaces[0]!.id);
+                    const blob = new Blob([json], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `my-forum-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (e) {
+                    alert(`导出失败：${e instanceof Error ? e.message : String(e)}`);
+                  }
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-border dark:border-dark-border rounded-md hover:bg-background-chat dark:hover:bg-dark-background-chat transition-colors"
+              >
+                <Download size={14} />
+                导出数据
+              </button>
+              <button
+                onClick={async () => {
+                  if (!window.confirm("导入将覆盖当前数据，确定继续吗？")) return;
+                  const input = document.createElement("input");
+                  input.type = "file";
+                  input.accept = ".json";
+                  input.onchange = async () => {
+                    const file = input.files?.[0];
+                    if (!file) return;
+                    try {
+                      const text = await file.text();
+                      const wsId = await db.importWorkspace(text);
+                      const workspaces = await db.listWorkspaces();
+                      const chats = await db.listChats(wsId);
+                      useAppStore.setState({ workspaces, chats, currentWorkspaceId: wsId, currentChatId: null });
+                      useChatStore.getState().clearMessages();
+                      alert("导入成功！");
+                    } catch (e) {
+                      alert(`导入失败：${e instanceof Error ? e.message : String(e)}`);
+                    }
+                  };
+                  input.click();
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-border dark:border-dark-border rounded-md hover:bg-background-chat dark:hover:bg-dark-background-chat transition-colors"
+              >
+                <Upload size={14} />
+                导入数据
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer — only show on LLM tab */}

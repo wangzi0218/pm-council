@@ -1,8 +1,7 @@
 import { useState, useCallback } from "react";
 import { useAppStore } from "@/store/appStore";
-import { Plus, Settings, Download, Upload, Search } from "lucide-react";
+import { Plus, Settings, Search } from "lucide-react";
 import { generateId } from "@/lib/utils";
-import { db } from "@/store/database";
 import { useChatStore } from "@/store/chatStore";
 import { getScenario, DEFAULT_SCENARIO, SCENARIOS } from "@/scenarios/registry";
 import { getCharacter } from "@/lib/characters";
@@ -106,49 +105,6 @@ export function Sidebar() {
     [setCurrentChat],
   );
 
-  const handleExport = useCallback(async () => {
-    if (workspaces.length === 0) return;
-    try {
-      const json = await db.exportWorkspace(workspaces[0]!.id);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `my-forum-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert(`导出失败：${e instanceof Error ? e.message : String(e)}`);
-    }
-  }, [workspaces]);
-
-  const handleImport = useCallback(async () => {
-    if (!window.confirm("导入将覆盖当前数据，确定继续吗？")) return;
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const wsId = await db.importWorkspace(text);
-        const workspaces = await db.listWorkspaces();
-        const chats = await db.listChats(wsId);
-        useAppStore.setState({
-          workspaces,
-          chats,
-          currentWorkspaceId: wsId,
-          currentChatId: null,
-        });
-        useChatStore.getState().clearMessages();
-      } catch (e) {
-        alert(`导入失败：${e instanceof Error ? e.message : String(e)}`);
-      }
-    };
-    input.click();
-  }, []);
-
   return (
     <aside className="w-[280px] shrink-0 border-r border-border dark:border-dark-border flex flex-col bg-background-secondary dark:bg-dark-background-secondary">
       {/* Header */}
@@ -221,37 +177,21 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="p-3 border-t border-border dark:border-dark-border space-y-2">
-        <button
-          onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 transition-opacity"
-        >
-          <Plus size={16} />
-          新建讨论
-        </button>
-        <div className="flex gap-1.5">
+      <div className="px-3 py-3 border-t border-border dark:border-dark-border">
+        <div className="flex gap-2">
           <button
-            onClick={handleExport}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors rounded-md hover:bg-background dark:hover:bg-dark-background"
-            title="导出"
+            onClick={handleNewChat}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90 transition-opacity"
           >
-            <Download size={13} />
-            导出
-          </button>
-          <button
-            onClick={handleImport}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors rounded-md hover:bg-background dark:hover:bg-dark-background"
-            title="导入"
-          >
-            <Upload size={13} />
-            导入
+            <Plus size={16} />
+            新建讨论
           </button>
           <button
             onClick={openSettings}
-            className="flex items-center justify-center p-1.5 text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors rounded-md hover:bg-background dark:hover:bg-dark-background"
+            className="flex items-center justify-center p-2 text-foreground-secondary dark:text-dark-foreground-secondary hover:text-foreground dark:hover:text-dark-foreground transition-colors rounded-md hover:bg-background dark:hover:bg-dark-background border border-border dark:border-dark-border"
             aria-label="设置"
           >
-            <Settings size={13} />
+            <Settings size={16} />
           </button>
         </div>
       </div>
