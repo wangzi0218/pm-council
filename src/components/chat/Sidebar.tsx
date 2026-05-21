@@ -177,7 +177,7 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Actions */}
-      <div className="px-3 py-3 border-t border-border dark:border-dark-border">
+      <div className="px-4 py-3 border-t border-border dark:border-dark-border">
         <div className="flex gap-2">
           <button
             onClick={handleNewChat}
